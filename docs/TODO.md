@@ -30,14 +30,14 @@
 
 ## 租戶前台（README「租戶子站」路由）
 
-- [ ] `/register`、`/login`（子網域會員；與平台帳號策略釐清後實作）
+- [x] `/register`、`/login`（子網域會員）
 - [x] `/products`（左欄篩選 + 右欄列表）
 - [x] `/products/[product_slug]` 商品詳情
 - [x] `/cart` 購物車
 - [x] `/payment` 付款流程
 - [ ] `/orders/[order_uuid]` 訂單明細頁（目前已提供 `/payment/complete` 完成頁）
 - [ ] `/tnc` 條款（可租戶自訂內容）
-- [ ] `/profile`、`/profile/orders`、`/profile/orders/[order_uuid]` 會員中心
+- [x] `/profile`、`/profile/orders`、`/profile/orders/[order_uuid]` 會員中心
 
 ### 會員子系統計畫（2026-04）
 
@@ -47,7 +47,7 @@
 - [x] M2 Cart 整合：`shop_carts` / `shop_cart_lines` + `GET/POST/PATCH/DELETE /api/store/cart*` + 登入後 cart merge
 - [x] M3 Profile：`GET/PATCH /api/store/profile` + `/profile` UI
 - [x] M4 Orders：`GET /api/store/orders`、`GET /api/store/orders/[order_uuid]` + `/profile/orders*` UI
-- [ ] M5 安全與驗收：tenant/customer 雙重校驗、route guard、手測清單
+- [x] M5 安全與驗收：tenant/customer 雙重校驗、route guard、手測清單（`docs/manual-test-tenant-customer-flow.md`）
 
 ---
 

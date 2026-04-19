@@ -2,7 +2,10 @@ import { eq } from 'drizzle-orm'
 import { createError, getRequestURL, readBody } from 'h3'
 import * as schema from '../../database/schema'
 import { getDb } from '../../utils/db'
-import { parseProviderConfig } from '../../utils/paymentProviderSchemas'
+import {
+  parseProviderConfig,
+  type PaypalPaymentConfig,
+} from '../../utils/paymentProviderSchemas'
 import { resolveCheckoutLines } from '../../utils/storeCheckoutResolveLines'
 import { storeCheckoutBodySchema } from '../../utils/storeCheckoutSchemas'
 import {
@@ -26,7 +29,11 @@ export default defineEventHandler(async (event) => {
   }
   const input = parsed.data
   const db = getDb(event)
-  const customerSession = await getOptionalStoreCustomerSession(event)
+  const customerSession = await getOptionalStoreCustomerSession(
+    event,
+    tenant.id,
+    tenant.shopSlug,
+  )
 
   const payment = await loadTenantPaymentSecrets(event, db, tenant.id, input.provider)
   if (!payment) {
@@ -128,7 +135,10 @@ export default defineEventHandler(async (event) => {
     }
 
     const clientSecret = payment.secrets.clientSecret
-    const cfg = parseProviderConfig('paypal', payment.row.config)
+    const cfg = parseProviderConfig(
+      'paypal',
+      payment.row.config,
+    ) as PaypalPaymentConfig
     if (!cfg.clientId || !clientSecret) {
       throw createError({ statusCode: 503, message: 'PayPal 未完成金流設定' })
     }
