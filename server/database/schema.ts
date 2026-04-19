@@ -79,6 +79,32 @@ export const users = pgTable('users', {
     .notNull(),
 })
 
+/** 租戶前台會員（與後台 users 分離） */
+export const customers = pgTable(
+  'customers',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    email: varchar('email', { length: 255 }).notNull(),
+    passwordHash: text('password_hash').notNull(),
+    fullName: varchar('full_name', { length: 120 }),
+    phone: varchar('phone', { length: 32 }),
+    status: varchar('status', { length: 32 }).notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('customers_tenant_email_uidx').on(t.tenantId, t.email),
+    index('customers_tenant_id_idx').on(t.tenantId),
+  ],
+)
+
 /**
  * 上傳／外部檔案紀錄（租戶隔離；`size` 供用量統計）
  * `public_url` 與 `storage_key` 至少其一有值（由應用層驗證）
@@ -292,6 +318,79 @@ export const variantOptionValues = pgTable(
       t.optionValueId,
     ),
     index('variant_option_values_variant_id_idx').on(t.productVariantId),
+  ],
+)
+
+/** 前台購物車（訪客以 session_key，會員以 customer_id 綁定） */
+export const shopCarts = pgTable(
+  'shop_carts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    customerId: uuid('customer_id').references(() => customers.id, {
+      onDelete: 'set null',
+    }),
+    sessionKey: varchar('session_key', { length: 128 }),
+    status: varchar('status', { length: 32 }).notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index('shop_carts_tenant_customer_status_idx').on(
+      t.tenantId,
+      t.customerId,
+      t.status,
+    ),
+    index('shop_carts_tenant_session_status_idx').on(
+      t.tenantId,
+      t.sessionKey,
+      t.status,
+    ),
+  ],
+)
+
+export const shopCartLines = pgTable(
+  'shop_cart_lines',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    cartId: uuid('cart_id')
+      .notNull()
+      .references(() => shopCarts.id, { onDelete: 'cascade' }),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'restrict' }),
+    productVariantId: uuid('product_variant_id').references(
+      () => productVariants.id,
+      { onDelete: 'restrict' },
+    ),
+    quantity: integer('quantity').notNull().default(1),
+    titleSnapshot: varchar('title_snapshot', { length: 255 }).notNull(),
+    productSlugSnapshot: varchar('product_slug_snapshot', { length: 255 }).notNull(),
+    unitPriceSnapshot: numeric('unit_price_snapshot', {
+      precision: 14,
+      scale: 4,
+    }).notNull(),
+    optionSummary: text('option_summary'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('shop_cart_lines_cart_product_variant_uidx').on(
+      t.cartId,
+      t.productId,
+      t.productVariantId,
+    ),
+    index('shop_cart_lines_cart_id_idx').on(t.cartId),
   ],
 )
 

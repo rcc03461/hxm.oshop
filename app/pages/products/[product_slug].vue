@@ -156,7 +156,7 @@ function optionSummaryText() {
     .join('、')
 }
 
-function handleAddToCart() {
+async function handleAddToCart() {
   cartHint.value = ''
   const d = data.value
   if (!d) return
@@ -169,7 +169,7 @@ function handleAddToCart() {
     return
   }
   const price = displayPrice.value ?? d.product.basePrice
-  addLine({
+  await addLine({
     productId: d.product.id,
     productSlug: d.product.slug,
     variantId: activeVariant.value?.id ?? null,
@@ -177,7 +177,7 @@ function handleAddToCart() {
     unitPrice: price,
     optionSummary: optionSummaryText(),
   })
-  void navigateTo('/cart')
+  await navigateTo('/cart')
 }
 </script>
 

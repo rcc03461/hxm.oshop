@@ -13,20 +13,21 @@ const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
+const { refresh } = useCustomerAuth()
 
 async function onSubmit() {
   errorMessage.value = null
   loading.value = true
   try {
-    /**
-     * Tenant 會員登入 API 尚未接入，
-     * 先保留表單與互動，避免路由空缺。
-     */
-    await new Promise(resolve => setTimeout(resolve, 300))
-    throw createError({
-      statusCode: 501,
-      statusMessage: '租戶會員登入尚未開放',
+    await $fetch('/api/store/auth/login', {
+      method: 'POST',
+      body: {
+        email: email.value,
+        password: password.value,
+      },
     })
+    await refresh()
+    await navigateTo('/profile')
   } catch (e: unknown) {
     const err = e as {
       data?: { message?: string }

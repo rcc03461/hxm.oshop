@@ -39,6 +39,16 @@
 - [ ] `/tnc` 條款（可租戶自訂內容）
 - [ ] `/profile`、`/profile/orders`、`/profile/orders/[order_uuid]` 會員中心
 
+### 會員子系統計畫（2026-04）
+
+參考：`docs/plan-tenant-customer-auth-profile-orders-carts.md`
+
+- [x] M1 會員基礎：`customers` migration + `POST /api/store/auth/register|login|logout`、`GET /api/store/auth/me`
+- [x] M2 Cart 整合：`shop_carts` / `shop_cart_lines` + `GET/POST/PATCH/DELETE /api/store/cart*` + 登入後 cart merge
+- [x] M3 Profile：`GET/PATCH /api/store/profile` + `/profile` UI
+- [ ] M4 Orders：`GET /api/store/orders`、`GET /api/store/orders/[order_uuid]` + `/profile/orders*` UI
+- [ ] M5 安全與驗收：tenant/customer 雙重校驗、route guard、手測清單
+
 ---
 
 ## 租戶首頁與模組（PRD）
@@ -71,4 +81,5 @@
 - `docs/PRD.md`
 - `docs/plan-main-site-landing-auth.md`
 - `docs/plan-tenant-admin-and-platform-login-redirect.md`
+- `docs/plan-tenant-customer-auth-profile-orders-carts.md`
 - `README.md`

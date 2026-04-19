@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { user, refresh, logout } = useAuth()
+const { customer, refresh: refreshCustomer, logout: logoutCustomer } = useCustomerAuth()
 const tenantSlug = useState<string | null>('oshop-tenant-slug')
 const { totalQty } = useStoreCart()
 
@@ -9,10 +10,16 @@ const adminEntry = computed(() =>
 
 onMounted(() => {
   void refresh()
+  void refreshCustomer()
 })
 
 async function handleLogout() {
   await logout()
+  await navigateTo('/')
+}
+
+async function handleCustomerLogout() {
+  await logoutCustomer()
   await navigateTo('/')
 }
 </script>
@@ -72,6 +79,24 @@ async function handleLogout() {
               type="button"
               class="rounded-md border border-neutral-300 px-3 py-1.5 font-medium text-neutral-800 hover:bg-neutral-50"
               @click="handleLogout"
+            >
+              登出
+            </button>
+          </template>
+          <template v-else-if="customer && tenantSlug">
+            <span class="hidden text-neutral-600 sm:inline">
+              {{ customer.fullName || customer.email }}
+            </span>
+            <NuxtLink
+              to="/profile"
+              class="rounded-md border border-neutral-200 px-3 py-1.5 font-medium text-neutral-800 hover:bg-neutral-50"
+            >
+              會員中心
+            </NuxtLink>
+            <button
+              type="button"
+              class="rounded-md border border-neutral-300 px-3 py-1.5 font-medium text-neutral-800 hover:bg-neutral-50"
+              @click="handleCustomerLogout"
             >
               登出
             </button>
