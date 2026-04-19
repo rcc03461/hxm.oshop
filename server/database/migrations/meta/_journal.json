@@ -71,6 +71,13 @@
       "when": 1776670000000,
       "tag": "0009_shop_carts",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1776680000000,
+      "tag": "0010_shop_orders_customer",
+      "breakpoints": true
     }
   ]
 }

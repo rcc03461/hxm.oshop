@@ -402,6 +402,9 @@ export const shopOrders = pgTable(
     tenantId: uuid('tenant_id')
       .notNull()
       .references(() => tenants.id, { onDelete: 'cascade' }),
+    customerId: uuid('customer_id').references(() => customers.id, {
+      onDelete: 'set null',
+    }),
     invoicePublicId: uuid('invoice_public_id').notNull().defaultRandom(),
     status: varchar('status', { length: 32 }).notNull().default('pending_payment'),
     paymentProvider: varchar('payment_provider', { length: 32 }),
@@ -421,6 +424,11 @@ export const shopOrders = pgTable(
     uniqueIndex('shop_orders_invoice_public_id_uidx').on(t.invoicePublicId),
     index('shop_orders_tenant_id_idx').on(t.tenantId),
     index('shop_orders_tenant_status_idx').on(t.tenantId, t.status),
+    index('shop_orders_tenant_customer_created_idx').on(
+      t.tenantId,
+      t.customerId,
+      t.createdAt,
+    ),
   ],
 )
 

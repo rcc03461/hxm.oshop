@@ -11,6 +11,7 @@ const phone = ref('')
 const saving = ref(false)
 const errorMessage = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
+const route = useRoute()
 
 await refresh()
 
@@ -62,58 +63,84 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-    <h1 class="text-2xl font-semibold tracking-tight text-neutral-900">
-      會員中心
-    </h1>
-    <p class="mt-2 text-sm text-neutral-600">管理你的聯絡資料。</p>
+  <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <div class="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)]">
+      <aside class="h-fit rounded-lg border border-neutral-200 bg-white p-3">
+        <p class="px-2 pb-2 text-xs font-semibold uppercase tracking-widest text-neutral-500">
+          會員中心
+        </p>
+        <nav class="space-y-1">
+          <NuxtLink
+            to="/profile"
+            class="block rounded-md px-3 py-2 text-sm"
+            :class="route.path === '/profile' ? 'bg-neutral-900 text-white' : 'text-neutral-700 hover:bg-neutral-50'"
+          >
+            我的資料
+          </NuxtLink>
+          <NuxtLink
+            to="/profile/orders"
+            class="block rounded-md px-3 py-2 text-sm"
+            :class="route.path.startsWith('/profile/orders') ? 'bg-neutral-900 text-white' : 'text-neutral-700 hover:bg-neutral-50'"
+          >
+            我的訂單
+          </NuxtLink>
+        </nav>
+      </aside>
 
-    <p v-if="error" class="mt-6 text-sm text-red-600">
-      {{ error.message }}
-    </p>
+      <section>
+        <h1 class="text-2xl font-semibold tracking-tight text-neutral-900">
+          我的資料
+        </h1>
+        <p class="mt-2 text-sm text-neutral-600">管理你的聯絡資料。</p>
 
-    <form v-else class="mt-6 space-y-4 rounded-lg border border-neutral-200 bg-white p-5" @submit.prevent="onSubmit">
-      <div>
-        <label class="block text-xs font-medium text-neutral-700" for="email">電子郵件（不可修改）</label>
-        <input
-          id="email"
-          :value="data?.profile.email || customer?.email || ''"
-          disabled
-          class="mt-1 w-full rounded-md border border-neutral-200 bg-neutral-100 px-3 py-2 text-sm text-neutral-500"
-        >
-      </div>
+        <p v-if="error" class="mt-6 text-sm text-red-600">
+          {{ error.message }}
+        </p>
 
-      <div>
-        <label class="block text-xs font-medium text-neutral-700" for="fullName">姓名</label>
-        <input
-          id="fullName"
-          v-model="fullName"
-          required
-          maxlength="120"
-          class="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
-        >
-      </div>
+        <form v-else class="mt-6 space-y-4 rounded-lg border border-neutral-200 bg-white p-5" @submit.prevent="onSubmit">
+          <div>
+            <label class="block text-xs font-medium text-neutral-700" for="email">電子郵件（不可修改）</label>
+            <input
+              id="email"
+              :value="data?.profile.email || customer?.email || ''"
+              disabled
+              class="mt-1 w-full rounded-md border border-neutral-200 bg-neutral-100 px-3 py-2 text-sm text-neutral-500"
+            >
+          </div>
 
-      <div>
-        <label class="block text-xs font-medium text-neutral-700" for="phone">電話（選填）</label>
-        <input
-          id="phone"
-          v-model="phone"
-          maxlength="32"
-          class="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
-        >
-      </div>
+          <div>
+            <label class="block text-xs font-medium text-neutral-700" for="fullName">姓名</label>
+            <input
+              id="fullName"
+              v-model="fullName"
+              required
+              maxlength="120"
+              class="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+            >
+          </div>
 
-      <p v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</p>
-      <p v-if="successMessage" class="text-sm text-emerald-700">{{ successMessage }}</p>
+          <div>
+            <label class="block text-xs font-medium text-neutral-700" for="phone">電話（選填）</label>
+            <input
+              id="phone"
+              v-model="phone"
+              maxlength="32"
+              class="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+            >
+          </div>
 
-      <button
-        type="submit"
-        class="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
-        :disabled="saving"
-      >
-        {{ saving ? '儲存中...' : '儲存資料' }}
-      </button>
-    </form>
+          <p v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</p>
+          <p v-if="successMessage" class="text-sm text-emerald-700">{{ successMessage }}</p>
+
+          <button
+            type="submit"
+            class="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
+            :disabled="saving"
+          >
+            {{ saving ? '儲存中...' : '儲存資料' }}
+          </button>
+        </form>
+      </section>
+    </div>
   </div>
 </template>

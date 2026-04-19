@@ -46,7 +46,7 @@
 - [x] M1 會員基礎：`customers` migration + `POST /api/store/auth/register|login|logout`、`GET /api/store/auth/me`
 - [x] M2 Cart 整合：`shop_carts` / `shop_cart_lines` + `GET/POST/PATCH/DELETE /api/store/cart*` + 登入後 cart merge
 - [x] M3 Profile：`GET/PATCH /api/store/profile` + `/profile` UI
-- [ ] M4 Orders：`GET /api/store/orders`、`GET /api/store/orders/[order_uuid]` + `/profile/orders*` UI
+- [x] M4 Orders：`GET /api/store/orders`、`GET /api/store/orders/[order_uuid]` + `/profile/orders*` UI
 - [ ] M5 安全與驗收：tenant/customer 雙重校驗、route guard、手測清單
 
 ---

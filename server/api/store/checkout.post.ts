@@ -12,6 +12,7 @@ import {
 import { stripePostForm } from '../../utils/storeStripeHttp'
 import { loadTenantPaymentSecrets } from '../../utils/storeTenantPayment'
 import { requireStoreTenant } from '../../utils/storeTenant'
+import { getOptionalStoreCustomerSession } from '../../utils/optionalStoreCustomerSession'
 
 export default defineEventHandler(async (event) => {
   const tenant = await requireStoreTenant(event)
@@ -25,6 +26,7 @@ export default defineEventHandler(async (event) => {
   }
   const input = parsed.data
   const db = getDb(event)
+  const customerSession = await getOptionalStoreCustomerSession(event)
 
   const payment = await loadTenantPaymentSecrets(event, db, tenant.id, input.provider)
   if (!payment) {
@@ -41,12 +43,13 @@ export default defineEventHandler(async (event) => {
     .insert(schema.shopOrders)
     .values({
       tenantId: tenant.id,
+      customerId: customerSession?.customerId ?? null,
       status: 'pending_payment',
       paymentProvider: input.provider,
       currency: 'HKD',
       subtotal,
       total,
-      customerEmail: input.customerEmail ?? null,
+      customerEmail: input.customerEmail ?? customerSession?.email ?? null,
     })
     .returning()
 
