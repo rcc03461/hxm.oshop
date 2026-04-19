@@ -16,11 +16,14 @@ const q = ref('')
 const page = ref(1)
 const pageSize = ref(20)
 
+/** SSR 時須沿用當前請求的 Cookie/Host，否則內部 /api/admin/* 會拿不到登入態或租戶 Host。 */
+const requestFetch = useRequestFetch()
+
 const { data, pending, refresh, error } = await useAsyncData(
   () =>
     `admin-products-${page.value}-${pageSize.value}-${q.value.trim() || '-'}`,
   async () => {
-    return await $fetch<{
+    return await requestFetch<{
       items: Row[]
       page: number
       pageSize: number
@@ -40,7 +43,7 @@ const { data, pending, refresh, error } = await useAsyncData(
 const { data: attachmentStats } = await useAsyncData(
   'admin-attachment-stats',
   () =>
-    $fetch<{ totalBytes: number; totalCount: number }>(
+    requestFetch<{ totalBytes: number; totalCount: number }>(
       '/api/admin/attachments/stats',
       { credentials: 'include' },
     ),

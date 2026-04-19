@@ -13,6 +13,9 @@ node_modules
 logs
 *.log
 
+# 本機上傳（後台 attachments/upload）
+public/uploads
+
 # Misc
 .DS_Store
 .fleet

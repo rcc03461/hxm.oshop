@@ -49,10 +49,13 @@ type Detail = {
   }>
 }
 
+/** SSR 時須沿用當前請求的 Cookie/Host，否則內部 /api/admin/* 會拿不到登入態或租戶 Host。 */
+const requestFetch = useRequestFetch()
+
 const { data, refresh, error } = await useAsyncData(
   () => `admin-product-detail-${id.value}`,
   async () => {
-    return await $fetch<Detail>(`/api/admin/products/${id.value}`, {
+    return await requestFetch<Detail>(`/api/admin/products/${id.value}`, {
       credentials: 'include',
     })
   },

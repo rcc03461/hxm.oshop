@@ -1,7 +1,7 @@
 import { createError, isError } from 'h3'
-import * as schema from '../../../database/schema'
 import { getDb } from '../../../utils/db'
 import { adminCreateAttachmentBodySchema } from '../../../utils/attachmentSchemas'
+import { insertAdminAttachment } from '../../../utils/insertAdminAttachment'
 import { summarizeDbErrorForLog } from '../../../utils/dbErrors'
 import { requireTenantSession } from '../../../utils/requireTenantSession'
 
@@ -18,20 +18,16 @@ export default defineEventHandler(async (event) => {
   const db = getDb(event)
 
   try {
-    const [row] = await db
-      .insert(schema.attachments)
-      .values({
-        tenantId: session.tenantId,
-        type: d.type,
-        mimetype: d.mimetype,
-        filename: d.filename,
-        extension: d.extension,
-        size: d.size,
-        storageKey: d.storageKey ?? null,
-        publicUrl: d.publicUrl ?? null,
-        updatedAt: new Date(),
-      })
-      .returning()
+    const row = await insertAdminAttachment(db, {
+      tenantId: session.tenantId,
+      type: d.type,
+      mimetype: d.mimetype,
+      filename: d.filename,
+      extension: d.extension,
+      size: d.size,
+      storageKey: d.storageKey ?? null,
+      publicUrl: d.publicUrl ?? null,
+    })
 
     if (!row) {
       throw createError({ statusCode: 500, message: '建立附件失敗' })
