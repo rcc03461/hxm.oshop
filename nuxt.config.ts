@@ -4,6 +4,16 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@nuxtjs/tailwindcss'],
   css: ['~/assets/css/tailwind.css'],
+  // Windows 上 hosts 將 oshop.com.hk 指到 127.0.0.1（IPv4），若 dev 只綁 ::1 會 ERR_CONNECTION_REFUSED
+  devServer: {
+    host: '0.0.0.0',
+  },
+  vite: {
+    server: {
+      // 自訂網域開發時避免 Vite 擋 Host（監聽位址請用 package.json 的 dev --host）
+      allowedHosts: ['oshop.com.hk', '.oshop.com.hk', 'localhost','127.0.0.1'],
+    },
+  },
   runtimeConfig: {
     databaseUrl: process.env.DATABASE_URL || '',
     dbHost: process.env.db_host || process.env.DB_HOST || '',

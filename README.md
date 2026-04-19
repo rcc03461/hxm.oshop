@@ -55,13 +55,19 @@ bun install
 bun run dev
 ```
 
-主站請用 hosts 中的網域名稱啟動（否則 cookie 網域與你預期的 `oshop.com.hk` 不一致），例如：
+`dev` 指令已帶 `--host 0.0.0.0`，終端應同時出現 **Local** 與 **Network** 網址；若仍只顯示 `use --host to expose`，請確認已存檔並重啟 dev。
 
-```bash
-bun run dev -- --host oshop.com.hk
-```
+瀏覽器開啟：`http://oshop.com.hk:3000`（port 依終端機輸出為準；hosts 需已指向 `127.0.0.1`）。
 
-瀏覽器開啟：`http://oshop.com.hk:3000`（port 依終端機輸出為準）。
+### 為何 `localhost` 可以、`oshop.com.hk` 卻 `ERR_CONNECTION_REFUSED`？
+
+在 Windows 上很常見：開發伺服器預設只綁在 **`localhost`（常為 IPv6 的 `::1`）**，而 hosts 裡的 `oshop.com.hk` 通常解析成 **`127.0.0.1`（IPv4）**，兩者不是同一個 listening socket，就會出現連線被拒。
+
+專案透過 **`package.json` 的 `dev` 指令**（`nuxt dev --host 0.0.0.0`）綁在 **`0.0.0.0`**，IPv4（`127.0.0.1`／`oshop.com.hk`）與本機其他網卡都能連。`nuxt.config` 內 **`devServer.host`** 為輔助說明用；修改後請**重啟** `bun run dev`。
+
+若仍被 Vite 擋 Host，已一併設定 `vite.server.allowedHosts` 包含 `oshop.com.hk` 與 `.oshop.com.hk`。
+
+（選用）仍可用 CLI 指定對外顯示的主機名：`bun run dev -- --host oshop.com.hk`。
 
 ### 環境變數
 
