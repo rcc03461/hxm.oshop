@@ -36,7 +36,7 @@ type Detail = {
 
 const requestFetch = useRequestFetch()
 
-const { data, error } = await useAsyncData(
+const { data, error, refresh } = await useAsyncData(
   () => `admin-order-detail-${id.value}`,
   async () => {
     return await requestFetch<Detail>(`/api/admin/orders/${id.value}`, {
@@ -86,6 +86,45 @@ function providerLabel(p: string | null) {
   if (p === 'stripe') return 'Stripe'
   if (p === 'paypal') return 'PayPal'
   return p
+}
+
+const statusDraft = ref<'pending_payment' | 'paid' | 'payment_failed'>(
+  'pending_payment',
+)
+const savingStatus = ref(false)
+const saveStatusErr = ref<string | null>(null)
+const saveStatusOk = ref(false)
+
+watch(
+  () => data.value?.order.status,
+  (v) => {
+    if (!v) return
+    if (v === 'pending_payment' || v === 'paid' || v === 'payment_failed') {
+      statusDraft.value = v
+    }
+  },
+  { immediate: true },
+)
+
+async function saveStatus() {
+  if (!data.value) return
+  savingStatus.value = true
+  saveStatusErr.value = null
+  saveStatusOk.value = false
+  try {
+    await $fetch(`/api/admin/orders/${data.value.order.id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      body: { status: statusDraft.value },
+    })
+    await refresh()
+    saveStatusOk.value = true
+  } catch (e: unknown) {
+    const x = e as { data?: { message?: string }; message?: string }
+    saveStatusErr.value = x?.data?.message || x?.message || '更新狀態失敗'
+  } finally {
+    savingStatus.value = false
+  }
 }
 </script>
 
@@ -190,6 +229,51 @@ function providerLabel(p: string | null) {
           </dd>
         </div>
       </dl>
+
+      <section class="mt-8 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+        <h2 class="text-base font-semibold text-neutral-900">
+          訂單狀態
+        </h2>
+        <p class="mt-1 text-sm text-neutral-600">
+          可手動修正狀態（例如線下確認收款）。
+        </p>
+        <p
+          v-if="saveStatusErr"
+          class="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700"
+        >
+          {{ saveStatusErr }}
+        </p>
+        <p
+          v-if="saveStatusOk"
+          class="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+        >
+          訂單狀態已更新。
+        </p>
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+          <select
+            v-model="statusDraft"
+            class="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm"
+          >
+            <option value="pending_payment">
+              待付款
+            </option>
+            <option value="paid">
+              已付款
+            </option>
+            <option value="payment_failed">
+              付款失敗
+            </option>
+          </select>
+          <button
+            type="button"
+            :disabled="savingStatus || statusDraft === data.order.status"
+            class="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
+            @click="saveStatus"
+          >
+            {{ savingStatus ? '更新中…' : '更新狀態' }}
+          </button>
+        </div>
+      </section>
 
       <section class="mt-8">
         <h2 class="text-base font-semibold text-neutral-900">

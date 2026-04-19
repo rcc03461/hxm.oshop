@@ -10,7 +10,7 @@ const requestFetch = useRequestFetch()
 const { data: stats, error } = await useAsyncData(
   'admin-dashboard-stats',
   async () => {
-    const [orders, products, categories] = await Promise.all([
+    const [orders, products, categories, customers] = await Promise.all([
       requestFetch<{ total: number }>('/api/admin/orders', {
         credentials: 'include',
         query: { page: 1, pageSize: 1 },
@@ -23,11 +23,16 @@ const { data: stats, error } = await useAsyncData(
         credentials: 'include',
         query: { page: 1, pageSize: 1 },
       }),
+      requestFetch<{ total: number }>('/api/admin/customers', {
+        credentials: 'include',
+        query: { page: 1, pageSize: 1 },
+      }),
     ])
     return {
       orders: orders.total,
       products: products.total,
       categories: categories.total,
+      customers: customers.total,
     }
   },
 )
@@ -44,7 +49,7 @@ const { data: stats, error } = await useAsyncData(
     <p v-if="error" class="mt-3 text-sm text-red-600">
       無法載入統計，請確認已登入。
     </p>
-    <div class="mt-8 grid gap-4 sm:grid-cols-3">
+    <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <NuxtLink
         to="/admin/orders"
         class="block rounded-lg border border-neutral-200 bg-white p-4 shadow-sm transition hover:border-neutral-300 hover:shadow"
@@ -85,6 +90,20 @@ const { data: stats, error } = await useAsyncData(
         </p>
         <p class="mt-2 text-xs text-neutral-500">
           管理分類 →
+        </p>
+      </NuxtLink>
+      <NuxtLink
+        to="/admin/customers"
+        class="block rounded-lg border border-neutral-200 bg-white p-4 shadow-sm transition hover:border-neutral-300 hover:shadow"
+      >
+        <p class="text-xs text-neutral-500">
+          顧客
+        </p>
+        <p class="mt-2 text-2xl font-semibold text-neutral-900">
+          {{ stats ? stats.customers : '—' }}
+        </p>
+        <p class="mt-2 text-xs text-neutral-500">
+          管理顧客 →
         </p>
       </NuxtLink>
     </div>
