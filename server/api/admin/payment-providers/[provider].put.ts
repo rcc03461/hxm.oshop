@@ -69,9 +69,7 @@ export default defineEventHandler(async (event) => {
         (parsed.data as AdminStripePaymentPutBody).webhookSecret !== undefined
       : (parsed.data as AdminPaypalPaymentPutBody).clientSecret !== undefined
 
-  const needsCryptoKey = Boolean(existing?.secretsEncrypted) || wantsSecretChange
-
-  if (needsCryptoKey && !getPaymentSecretsKey32(event)) {
+  if (wantsSecretChange && !getPaymentSecretsKey32(event)) {
     throw createError({
       statusCode: 503,
       message:
@@ -79,11 +77,16 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const cryptoKey = needsCryptoKey ? requirePaymentSecretsKey(event) : null
+  const cryptoKey = wantsSecretChange ? requirePaymentSecretsKey(event) : null
 
   let prevSecrets: Record<string, string> = {}
   if (existing?.secretsEncrypted && cryptoKey) {
-    prevSecrets = decryptSecretsJson(existing.secretsEncrypted, cryptoKey)
+    try {
+      prevSecrets = decryptSecretsJson(existing.secretsEncrypted, cryptoKey)
+    } catch {
+      // 舊密文無法解密時，改由本次提交值覆蓋（不再阻塞修復流程）
+      prevSecrets = {}
+    }
   }
 
   const nextSecrets: Record<string, string> = { ...prevSecrets }

@@ -31,6 +31,7 @@ type ProviderRow =
 
 type PaymentProvidersResponse = {
   providers: ProviderRow[]
+  warning?: string
 }
 
 const requestFetch = useRequestFetch()
@@ -44,6 +45,16 @@ const { data, refresh, error, pending } = await useAsyncData(
     })
   },
 )
+
+const loadErrMessage = computed(() => {
+  const e = error.value as
+    | { data?: { message?: string }; message?: string }
+    | null
+    | undefined
+  return e?.data?.message || e?.message || '無法載入設定。'
+})
+
+const loadWarning = computed(() => data.value?.warning || '')
 
 const stripe = reactive({
   enabled: false,
@@ -203,10 +214,17 @@ async function saveAll() {
       v-if="error"
       class="text-sm text-red-600"
     >
-      無法載入設定。
+      {{ loadErrMessage }}
     </p>
 
     <template v-else>
+      <p
+        v-if="loadWarning"
+        class="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800"
+      >
+        {{ loadWarning }}
+      </p>
+
       <p
         v-if="pending"
         class="text-sm text-neutral-500"

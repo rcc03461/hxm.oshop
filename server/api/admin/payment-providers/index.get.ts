@@ -56,6 +56,7 @@ export default defineEventHandler(async (event) => {
     const by = new Map(rows.map((r) => [r.provider, r]))
     const key = getPaymentSecretsKey32(event)
 
+    let hasDecryptIssue = false
     const providers = codes.map((provider) => {
       const row = by.get(provider)
       const enabled = row?.enabled ?? false
@@ -71,7 +72,13 @@ export default defineEventHandler(async (event) => {
               '資料庫含已加密的金流密鑰，請設定 PAYMENT_SECRETS_KEY 後再開啟此頁',
           })
         }
-        const secrets = decryptSecretsJson(row.secretsEncrypted, key)
+        let secrets: Record<string, string>
+        try {
+          secrets = decryptSecretsJson(row.secretsEncrypted, key)
+        } catch {
+          hasDecryptIssue = true
+          secrets = {}
+        }
         hints = secretHints(provider, secrets)
       }
 
@@ -84,7 +91,12 @@ export default defineEventHandler(async (event) => {
       }
     })
 
-    return { providers }
+    return {
+      providers,
+      warning: hasDecryptIssue
+        ? '偵測到既有金流密鑰無法解密。你仍可在此頁重新輸入並儲存密鑰以覆蓋舊值。'
+        : undefined,
+    }
   } catch (e: unknown) {
     if (isError(e)) throw e
     const sqlState = (e as { cause?: { code?: string } })?.cause?.code
