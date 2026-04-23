@@ -13,6 +13,12 @@ type StoreNavItem = {
   children: StoreNavItem[]
 }
 
+type StoreHomepageModule = {
+  moduleType: string
+  isEnabled: boolean
+  config: Record<string, unknown>
+}
+
 const { data: storeNav } = await useAsyncData(
   () => `store-navigation-${tenantSlug.value || 'platform'}`,
   async () => {
@@ -26,6 +32,27 @@ const { data: storeNav } = await useAsyncData(
   },
   { watch: [tenantSlug] },
 )
+
+const { data: storeHomepageModules } = await useAsyncData(
+  () => `store-homepage-modules-nav-${tenantSlug.value || 'platform'}`,
+  async () => {
+    if (!tenantSlug.value) return [] as StoreHomepageModule[]
+    try {
+      const res = await requestFetch<{ items: StoreHomepageModule[] }>('/api/store/homepage/modules')
+      return res.items ?? []
+    } catch {
+      return [] as StoreHomepageModule[]
+    }
+  },
+  { watch: [tenantSlug] },
+)
+
+const showTopNav = computed(() => {
+  if (!tenantSlug.value) return true
+  const navModule = (storeHomepageModules.value ?? []).find((item) => item.moduleType === 'nav')
+  if (!navModule || !navModule.isEnabled) return false
+  return (navModule.config.show as boolean | undefined) !== false
+})
 
 const { data: tenantInfo } = await useAsyncData(
   () => `store-tenant-info-${tenantSlug.value || 'platform'}`,
@@ -89,7 +116,7 @@ async function handleCustomerLogout() {
           >
           <span>{{ tenantInfo?.displayName || 'OShop' }}</span>
         </NuxtLink>
-        <nav class="flex flex-wrap items-center gap-3 text-sm">
+        <nav v-if="showTopNav" class="flex flex-wrap items-center gap-3 text-sm">
           <NuxtLink
             v-if="tenantSlug"
             to="/products"

@@ -3,6 +3,7 @@ const tenantSlug = useState<string | null>('oshop-tenant-slug')
 
 const nav = [
   { to: '/admin/dashboard', label: '總覽' },
+  { to: '/admin/homepage', label: '首頁模組' },
   { to: '/admin/navigation', label: '菜單' },
   { to: '/admin/pages', label: '頁面' },
   { to: '/admin/categories', label: '分類' },

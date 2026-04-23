@@ -290,6 +290,49 @@ export const shopMenus = pgTable(
   ],
 )
 
+/** 租戶首頁模組（支援 draft/published 兩版） */
+export const tenantHomepageModules = pgTable(
+  'tenant_homepage_modules',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    versionState: varchar('version_state', { length: 16 }).notNull().default('draft'),
+    moduleKey: varchar('module_key', { length: 64 }).notNull(),
+    moduleType: varchar('module_type', { length: 32 }).notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    isEnabled: boolean('is_enabled').notNull().default(true),
+    configJson: jsonb('config_json')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('tenant_homepage_modules_tenant_state_key_uidx').on(
+      t.tenantId,
+      t.versionState,
+      t.moduleKey,
+    ),
+    index('tenant_homepage_modules_tenant_state_sort_idx').on(
+      t.tenantId,
+      t.versionState,
+      t.sortOrder,
+    ),
+    index('tenant_homepage_modules_tenant_state_type_idx').on(
+      t.tenantId,
+      t.versionState,
+      t.moduleType,
+    ),
+  ],
+)
+
 /** 商品與分類多對多（`sort_order` 為該商品上的分類排序） */
 export const productCategories = pgTable(
   'product_categories',

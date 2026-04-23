@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { landingHero, landingSlides } from '~/data/landing'
 import type { LandingCategory, LandingProductCard } from '~/types/landing'
+import type { HomepageModule } from '~/types/homepage'
 
 definePageMeta({
   layout: 'default',
@@ -82,12 +83,39 @@ const {
   },
 )
 
+const {
+  data: tenantHomepageModulesData,
+  pending: tenantHomepageModulesPending,
+  refresh: refreshTenantHomepageModules,
+} = await useAsyncData(
+  'tenant-homepage-modules',
+  async () => {
+    if (!tenantSlug.value) return [] as HomepageModule[]
+    const fetchApi = import.meta.server ? requestFetch : $fetch
+    try {
+      const res = await (fetchApi as (url: string) => Promise<{ items: HomepageModule[] }>)(
+        '/api/store/homepage/modules',
+      )
+      return res.items ?? []
+    } catch {
+      // 尚未發佈首頁模組時，回退到既有首頁區塊，避免整頁錯誤。
+      return [] as HomepageModule[]
+    }
+  },
+)
+
 const tenantLandingCategories = computed(
   () => tenantLandingData.value?.categories ?? [],
 )
 
 const tenantLandingProducts = computed(
   () => tenantLandingData.value?.products ?? [],
+)
+
+const enabledHomepageModules = computed(() =>
+  (tenantHomepageModulesData.value ?? [])
+    .filter((item) => item.isEnabled && item.moduleType !== 'nav')
+    .sort((a, b) => a.sortOrder - b.sortOrder),
 )
 </script>
 
@@ -99,9 +127,7 @@ const tenantLandingProducts = computed(
     <h1 class="mt-3 text-2xl font-semibold tracking-tight text-neutral-900">
       <span class="font-mono">{{ tenantSlug }}</span>
     </h1>
-    <p class="mt-3 text-sm text-neutral-600">
-      店舖首頁（模組化版面將於之後接入）。管理商品與設定請進後台。
-    </p>
+    <p class="mt-3 text-sm text-neutral-600">店舖首頁（模組化版面）。管理商品與設定請進後台。</p>
     <div class="mt-8 flex flex-wrap gap-3">
       <NuxtLink
         to="/products"
@@ -122,15 +148,10 @@ const tenantLandingProducts = computed(
         管理員登入
       </NuxtLink>
     </div>
-    <LandingCategoriesProductsSection
-      v-if="!tenantLandingPending && !tenantLandingError"
-      :categories="tenantLandingCategories"
-      :products="tenantLandingProducts"
-    />
     <section
-      v-else-if="tenantLandingPending"
+      v-if="tenantHomepageModulesPending"
       class="mt-16 animate-pulse rounded-xl border border-neutral-200 p-6"
-      aria-label="分類商品載入中"
+      aria-label="首頁模組載入中"
     >
       <div class="h-4 w-32 rounded bg-neutral-200" />
       <div class="mt-4 flex flex-wrap gap-2">
@@ -138,10 +159,10 @@ const tenantLandingProducts = computed(
         <div class="h-8 w-24 rounded-full bg-neutral-200" />
         <div class="h-8 w-16 rounded-full bg-neutral-200" />
       </div>
-      <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="mt-6 grid gap-4 sm:grid-cols-2">
         <div
-          v-for="n in 4"
-          :key="`landing-skeleton-${n}`"
+          v-for="n in 2"
+          :key="`homepage-skeleton-${n}`"
           class="overflow-hidden rounded-xl border border-neutral-200"
         >
           <div class="h-40 bg-neutral-200" />
@@ -153,6 +174,18 @@ const tenantLandingProducts = computed(
         </div>
       </div>
     </section>
+    <template v-else-if="enabledHomepageModules.length">
+      <HomepageModuleRenderer
+        v-for="module in enabledHomepageModules"
+        :key="module.moduleKey"
+        :module="module"
+      />
+    </template>
+    <LandingCategoriesProductsSection
+      v-else-if="!tenantLandingPending && !tenantLandingError"
+      :categories="tenantLandingCategories"
+      :products="tenantLandingProducts"
+    />
     <section
       v-else
       class="mt-16 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
