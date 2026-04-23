@@ -27,6 +27,33 @@ const { data: storeNav } = await useAsyncData(
   { watch: [tenantSlug] },
 )
 
+const { data: tenantInfo } = await useAsyncData(
+  () => `store-tenant-info-${tenantSlug.value || 'platform'}`,
+  async () => {
+    if (!tenantSlug.value) {
+      return null as null | {
+        shopSlug: string
+        displayName: string
+        logoUrl: string | null
+      }
+    }
+    try {
+      return await requestFetch<{
+        shopSlug: string
+        displayName: string
+        logoUrl: string | null
+      }>('/api/store/tenant-info')
+    } catch {
+      return {
+        shopSlug: tenantSlug.value,
+        displayName: tenantSlug.value,
+        logoUrl: null,
+      }
+    }
+  },
+  { watch: [tenantSlug] },
+)
+
 const adminEntry = computed(() =>
   user.value ? useTenantAdminEntryUrl(user.value.shopSlug) : '',
 )
@@ -53,8 +80,14 @@ async function handleCustomerLogout() {
       <div
         class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6"
       >
-        <NuxtLink to="/" class="text-sm font-semibold tracking-tight">
-          OShop
+        <NuxtLink to="/" class="flex items-center gap-2 text-sm font-semibold tracking-tight">
+          <img
+            v-if="tenantInfo?.logoUrl"
+            :src="tenantInfo.logoUrl"
+            :alt="`${tenantInfo.displayName} Logo`"
+            class="h-6 w-6 rounded object-cover"
+          >
+          <span>{{ tenantInfo?.displayName || 'OShop' }}</span>
         </NuxtLink>
         <nav class="flex flex-wrap items-center gap-3 text-sm">
           <NuxtLink
