@@ -3,6 +3,7 @@ import type { HomepageDynamicModule, HomepageModule, HomepageModuleComponentKey 
 const componentToModuleType: Record<HomepageModuleComponentKey, HomepageModule['moduleType']> = {
   nav1: 'nav',
   hero3: 'banner',
+  image_slider1: 'image_slider',
   category_grid1: 'category',
   product_slider1: 'products',
   footer1: 'footer',
@@ -11,6 +12,7 @@ const componentToModuleType: Record<HomepageModuleComponentKey, HomepageModule['
 const moduleTypeToComponent: Record<HomepageModule['moduleType'], HomepageModuleComponentKey> = {
   nav: 'nav1',
   banner: 'hero3',
+  image_slider: 'image_slider1',
   category: 'category_grid1',
   products: 'product_slider1',
   footer: 'footer1',
@@ -51,20 +53,26 @@ export function legacyToDynamicModules(items: HomepageModule[]): HomepageDynamic
     const component = moduleTypeToComponent[item.moduleType]
     if (component === 'product_slider1') {
       const productsConfig = item.config as Record<string, unknown>
+      const props: HomepageDynamicModule<'product_slider1'>['props'] = {
+        title: (productsConfig.title as string | undefined) ?? '',
+        source: (productsConfig.source as HomepageDynamicModule<'product_slider1'>['props']['source'] | undefined) ?? {
+          type: 'manual',
+          productIds: [],
+          sort: 'manual',
+        },
+        ui: (productsConfig.ui as HomepageDynamicModule<'product_slider1'>['props']['ui'] | undefined) ?? {
+          perView: 4,
+          autoplay: false,
+          intervalMs: 4000,
+          loop: false,
+        },
+      }
       return {
         uid: item.moduleKey,
         component,
         sortOrder: index,
         isEnabled: item.isEnabled,
-        props: {
-          title: (productsConfig.title as string | undefined) ?? '',
-          source: productsConfig.source ?? {
-            type: 'manual',
-            productIds: [],
-            sort: 'manual',
-          },
-          ui: productsConfig.ui ?? { perView: 4, autoplay: false, intervalMs: 4000, loop: false },
-        },
+        props,
         moduleKey: item.moduleKey,
         moduleType: item.moduleType,
       }

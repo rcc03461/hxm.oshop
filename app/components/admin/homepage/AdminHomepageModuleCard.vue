@@ -4,6 +4,7 @@ import type {
   HomepageCategoryModuleConfig,
   HomepageDynamicModule,
   HomepageFooterModuleConfig,
+  HomepageImageSliderModuleConfig,
   HomepageNavModuleConfig,
   HomepageProductSliderProps,
   HomepageProductsModuleConfig,
@@ -46,6 +47,12 @@ const bannerConfig = computed<HomepageBannerModuleConfig | null>(() =>
 const categoryConfig = computed<HomepageCategoryModuleConfig | null>(() =>
   props.module.component === 'category_grid1'
     ? (props.module.props as HomepageCategoryModuleConfig)
+    : null,
+)
+
+const imageSliderConfig = computed<HomepageImageSliderModuleConfig | null>(() =>
+  props.module.component === 'image_slider1'
+    ? (props.module.props as HomepageImageSliderModuleConfig)
     : null,
 )
 
@@ -106,6 +113,11 @@ const footerConfig = computed<HomepageFooterModuleConfig | null>(() =>
         v-else-if="module.component === 'category_grid1' && categoryConfig"
         :config="categoryConfig"
         :available-categories="availableCategories ?? []"
+      />
+
+      <AdminHomepageModuleFormImageSlider
+        v-else-if="module.component === 'image_slider1' && imageSliderConfig"
+        :config="imageSliderConfig"
       />
 
       <AdminHomepageModuleFormProducts

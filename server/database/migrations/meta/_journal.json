@@ -113,6 +113,13 @@
       "when": 1777248000000,
       "tag": "0015_homepage_modules",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1777320000000,
+      "tag": "0016_homepage_image_slider_module_type",
+      "breakpoints": true
     }
   ]
 }

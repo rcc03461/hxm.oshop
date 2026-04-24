@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const homepageModuleTypeSchema = z.enum(['nav', 'banner', 'category', 'products', 'footer'])
+export const homepageModuleTypeSchema = z.enum(['nav', 'banner', 'image_slider', 'category', 'products', 'footer'])
 export const homepageVersionStateSchema = z.enum(['draft', 'published'])
 
 const navConfigSchema = z.object({
@@ -31,6 +31,23 @@ const categoryConfigSchema = z.object({
       label: z.string().trim().min(1).max(60),
     }),
   ).max(12),
+})
+
+const imageSliderConfigSchema = z.object({
+  title: z.string().trim().min(0).max(120),
+  slides: z.array(
+    z.object({
+      id: z.string().trim().min(1).max(80),
+      imageUrl: z.string().trim().url(),
+      alt: z.string().trim().max(200).optional(),
+      linkUrl: z.string().trim().max(255).optional(),
+    }),
+  ).max(20),
+  ui: z.object({
+    autoplay: z.boolean(),
+    intervalMs: z.number().int().min(1000).max(120000),
+    loop: z.boolean(),
+  }),
 })
 
 const productsConfigSchema = z.object({
@@ -67,6 +84,7 @@ export const homepageModuleSchema = z.object({
   const result = (() => {
     if (module.moduleType === 'nav') return navConfigSchema.safeParse(module.config)
     if (module.moduleType === 'banner') return bannerConfigSchema.safeParse(module.config)
+    if (module.moduleType === 'image_slider') return imageSliderConfigSchema.safeParse(module.config)
     if (module.moduleType === 'category') return categoryConfigSchema.safeParse(module.config)
     if (module.moduleType === 'products') return productsConfigSchema.safeParse(module.config)
     return footerConfigSchema.safeParse(module.config)
@@ -101,13 +119,24 @@ const dynamicProductSourceSchema = z.union([
 
 const dynamicModuleSchema = z.object({
   uid: z.string().trim().min(1).max(64),
-  component: z.enum(['nav1', 'hero3', 'category_grid1', 'product_slider1', 'footer1']),
+  component: z.enum(['nav1', 'hero3', 'image_slider1', 'category_grid1', 'product_slider1', 'footer1']),
   sortOrder: z.number().int().min(0).max(1000),
   isEnabled: z.boolean(),
   props: z.record(z.string(), z.unknown()),
   moduleKey: z.string().trim().min(1).max(64).optional(),
   moduleType: homepageModuleTypeSchema.optional(),
 }).superRefine((module, ctx) => {
+  if (module.component === 'image_slider1') {
+    const result = imageSliderConfigSchema.safeParse(module.props)
+    if (!result.success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: result.error.issues[0]?.message ?? `模組 ${module.uid} 設定不正確`,
+        path: ['props'],
+      })
+    }
+  }
+
   if (module.component === 'product_slider1') {
     const sliderSchema = z.object({
       title: z.string().trim().min(0).max(120),

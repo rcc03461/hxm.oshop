@@ -1,4 +1,4 @@
-import type { HomepageDynamicModule, HomepageModule } from '../types/homepage'
+import type { HomepageDynamicModule, HomepageModule, HomepageModuleComponentKey } from '../types/homepage'
 import {
   addCategoryToDynamicModule,
   addProductToDynamicModule,
@@ -117,6 +117,55 @@ export function useHomepageEditor() {
 
   function removeProduct(module: HomepageDynamicModule<'product_slider1'>, index: number) {
     removeProductFromDynamicModule(module, index)
+  }
+
+  function createModule(component: HomepageModuleComponentKey) {
+    const uid = `mod-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const module: HomepageDynamicModule = {
+      uid,
+      component,
+      sortOrder: draftDynamicItems.value.length,
+      isEnabled: true,
+      props: {} as HomepageDynamicModule['props'],
+    }
+
+    if (component === 'nav1') {
+      module.props = { show: true }
+    } else if (component === 'hero3') {
+      module.props = {
+        hero: {
+          badge: '多租戶線上商店',
+          title: '',
+          subtitle: '',
+          primaryCta: { label: '', to: '/' },
+          secondaryCta: { label: '', to: '/' },
+        },
+      }
+    } else if (component === 'image_slider1') {
+      module.props = {
+        title: '',
+        slides: [],
+        ui: { autoplay: false, intervalMs: 4000, loop: true },
+      }
+    } else if (component === 'category_grid1') {
+      module.props = {
+        title: '',
+        categories: [],
+      }
+    } else if (component === 'product_slider1') {
+      module.props = {
+        title: '',
+        source: { type: 'manual', productIds: [], sort: 'manual' },
+        ui: { perView: 4, autoplay: false, intervalMs: 4000, loop: false },
+      }
+    } else {
+      module.props = { text: '' }
+    }
+
+    draftDynamicItems.value = normalizeDynamicHomepageModuleOrder([
+      ...draftDynamicItems.value,
+      module,
+    ])
   }
 
   const availableCategories = computed(() => {
@@ -251,6 +300,7 @@ export function useHomepageEditor() {
     removeCategory,
     addProduct,
     removeProduct,
+    createModule,
     saveDraft,
     publishDraft,
     resetDraft,

@@ -1,6 +1,6 @@
 import type { LandingCategory, LandingHero, LandingProductCard } from '~/types/landing'
 
-export const HOMEPAGE_MODULE_TYPES = ['nav', 'banner', 'category', 'products', 'footer'] as const
+export const HOMEPAGE_MODULE_TYPES = ['nav', 'banner', 'image_slider', 'category', 'products', 'footer'] as const
 export type HomepageModuleType = (typeof HOMEPAGE_MODULE_TYPES)[number]
 
 export const HOMEPAGE_VERSION_STATES = ['draft', 'published'] as const
@@ -19,6 +19,23 @@ export type HomepageCategoryModuleConfig = {
   categories: LandingCategory[]
 }
 
+export type HomepageImageSlide = {
+  id: string
+  imageUrl: string
+  alt?: string
+  linkUrl?: string
+}
+
+export type HomepageImageSliderModuleConfig = {
+  title: string
+  slides: HomepageImageSlide[]
+  ui: {
+    autoplay: boolean
+    intervalMs: number
+    loop: boolean
+  }
+}
+
 export type HomepageProductsModuleConfig = {
   title: string
   categories: LandingCategory[]
@@ -34,6 +51,7 @@ export type HomepageFooterModuleConfig = {
 export type HomepageModuleConfigMap = {
   nav: HomepageNavModuleConfig
   banner: HomepageBannerModuleConfig
+  image_slider: HomepageImageSliderModuleConfig
   category: HomepageCategoryModuleConfig
   products: HomepageProductsModuleConfig
   footer: HomepageFooterModuleConfig
@@ -47,7 +65,7 @@ export type HomepageModule<T extends HomepageModuleType = HomepageModuleType> = 
   config: HomepageModuleConfigMap[T] | Record<string, unknown>
 }
 
-export const HOMEPAGE_COMPONENT_KEYS = ['nav1', 'hero3', 'category_grid1', 'product_slider1', 'footer1'] as const
+export const HOMEPAGE_COMPONENT_KEYS = ['nav1', 'hero3', 'image_slider1', 'category_grid1', 'product_slider1', 'footer1'] as const
 export type HomepageModuleComponentKey = (typeof HOMEPAGE_COMPONENT_KEYS)[number]
 
 export const HOMEPAGE_PRODUCT_SOURCE_SORTS = ['manual', 'newest', 'price_asc', 'price_desc'] as const
@@ -83,6 +101,7 @@ export type HomepageProductSliderProps = {
 export type HomepageDynamicModulePropsMap = {
   nav1: HomepageNavModuleConfig
   hero3: HomepageBannerModuleConfig
+  image_slider1: HomepageImageSliderModuleConfig
   category_grid1: HomepageCategoryModuleConfig
   product_slider1: HomepageProductSliderProps
   footer1: HomepageFooterModuleConfig

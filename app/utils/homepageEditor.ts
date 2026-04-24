@@ -4,6 +4,7 @@ import type {
   HomepageDynamicModulePropsMap,
   HomepageCategoryModuleConfig,
   HomepageFooterModuleConfig,
+  HomepageImageSliderModuleConfig,
   HomepageModule,
   HomepageModuleComponentKey,
   HomepageModuleConfigMap,
@@ -17,6 +18,7 @@ type IdFactory = (prefix: string) => string
 const MODULE_TYPE_TO_COMPONENT: Record<HomepageModule['moduleType'], HomepageModuleComponentKey> = {
   nav: 'nav1',
   banner: 'hero3',
+  image_slider: 'image_slider1',
   category: 'category_grid1',
   products: 'product_slider1',
   footer: 'footer1',
@@ -108,6 +110,30 @@ export function ensureCategoryConfig(module: HomepageModule<'category'>): Homepa
   return config as HomepageCategoryModuleConfig
 }
 
+export function ensureImageSliderConfig(
+  module: HomepageModule<'image_slider'>,
+): HomepageImageSliderModuleConfig {
+  const config = asRecord(module)
+  if (typeof config.title !== 'string') config.title = ''
+  if (!Array.isArray(config.slides)) config.slides = []
+  config.slides = config.slides
+    .filter((item: unknown) => item && typeof item === 'object')
+    .map((item: any, index: number) => ({
+      id: typeof item.id === 'string' && item.id.trim().length ? item.id : `slide-${index}`,
+      imageUrl: typeof item.imageUrl === 'string' ? item.imageUrl : '',
+      alt: typeof item.alt === 'string' ? item.alt : '',
+      linkUrl: typeof item.linkUrl === 'string' ? item.linkUrl : '',
+    }))
+
+  if (!config.ui || typeof config.ui !== 'object') config.ui = {}
+  const ui = config.ui as Record<string, any>
+  if (typeof ui.autoplay !== 'boolean') ui.autoplay = false
+  if (typeof ui.intervalMs !== 'number') ui.intervalMs = 4000
+  if (ui.intervalMs < 1000) ui.intervalMs = 1000
+  if (typeof ui.loop !== 'boolean') ui.loop = true
+  return config as HomepageImageSliderModuleConfig
+}
+
 export function ensureProductsConfig(module: HomepageModule<'products'>): HomepageProductsModuleConfig {
   const config = asRecord(module)
   if (typeof config.title !== 'string') config.title = ''
@@ -157,6 +183,8 @@ export function ensureModuleConfig<T extends HomepageModule['moduleType']>(
       return ensureNavConfig(module as HomepageModule<'nav'>) as HomepageModuleConfigMap[T]
     case 'banner':
       return ensureBannerConfig(module as HomepageModule<'banner'>) as HomepageModuleConfigMap[T]
+    case 'image_slider':
+      return ensureImageSliderConfig(module as HomepageModule<'image_slider'>) as HomepageModuleConfigMap[T]
     case 'category':
       return ensureCategoryConfig(module as HomepageModule<'category'>) as HomepageModuleConfigMap[T]
     case 'products':
@@ -266,6 +294,26 @@ export function ensureDynamicModuleProps<T extends HomepageDynamicModule['compon
           label: typeof secondaryCta.label === 'string' ? secondaryCta.label : '',
           to: typeof secondaryCta.to === 'string' ? secondaryCta.to : '/',
         },
+      }
+      return props as HomepageDynamicModulePropsMap[T]
+    }
+    case 'image_slider1': {
+      if (typeof props.title !== 'string') props.title = ''
+      if (!Array.isArray(props.slides)) props.slides = []
+      props.slides = props.slides
+        .filter((item: unknown) => item && typeof item === 'object')
+        .map((item: any, index: number) => ({
+          id: typeof item.id === 'string' && item.id.trim().length ? item.id : `slide-${index}`,
+          imageUrl: typeof item.imageUrl === 'string' ? item.imageUrl : '',
+          alt: typeof item.alt === 'string' ? item.alt : '',
+          linkUrl: typeof item.linkUrl === 'string' ? item.linkUrl : '',
+        }))
+
+      const ui = props.ui && typeof props.ui === 'object' ? props.ui : {}
+      props.ui = {
+        autoplay: typeof ui.autoplay === 'boolean' ? ui.autoplay : false,
+        intervalMs: typeof ui.intervalMs === 'number' ? Math.max(1000, ui.intervalMs) : 4000,
+        loop: typeof ui.loop === 'boolean' ? ui.loop : true,
       }
       return props as HomepageDynamicModulePropsMap[T]
     }

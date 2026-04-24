@@ -175,6 +175,45 @@ describe('updateModuleConfigFromJson', () => {
 })
 
 describe('dynamic module conversion', () => {
+  test('image_slider module 會轉成 image_slider1 並保留 slides', () => {
+    const legacySlider = createModule('image_slider' as HomepageModule['moduleType'], {
+      title: '首頁輪播',
+      slides: [
+        {
+          id: 's1',
+          imageUrl: 'https://example.com/a.jpg',
+          alt: '圖一',
+          linkUrl: '/products/a',
+        },
+      ],
+      ui: {
+        autoplay: true,
+        intervalMs: 3000,
+        loop: true,
+      },
+    } as any)
+
+    const dynamic = toDynamicHomepageModule(legacySlider)
+
+    expect(dynamic.component).toBe('image_slider1')
+    expect(dynamic.props).toEqual({
+      title: '首頁輪播',
+      slides: [
+        {
+          id: 's1',
+          imageUrl: 'https://example.com/a.jpg',
+          alt: '圖一',
+          linkUrl: '/products/a',
+        },
+      ],
+      ui: {
+        autoplay: true,
+        intervalMs: 3000,
+        loop: true,
+      },
+    })
+  })
+
   test('products module 會轉成 product_slider1 並補齊預設 source/ui', () => {
     const legacyProducts = createModule('products', {
       title: '精選商品',
@@ -239,6 +278,40 @@ describe('dynamic module conversion', () => {
         autoplay: false,
         intervalMs: 4000,
         loop: false,
+      },
+    })
+  })
+
+  test('image_slider1 props 缺漏時會補齊預設值', () => {
+    const module = {
+      uid: 'm-image-slider',
+      component: 'image_slider1' as const,
+      sortOrder: 0,
+      isEnabled: true,
+      props: {
+        slides: [
+          {
+            imageUrl: 'https://example.com/x.jpg',
+          },
+        ],
+      },
+    } as any
+
+    const props = ensureDynamicModuleProps(module)
+    expect(props).toEqual({
+      title: '',
+      slides: [
+        {
+          id: 'slide-0',
+          imageUrl: 'https://example.com/x.jpg',
+          alt: '',
+          linkUrl: '',
+        },
+      ],
+      ui: {
+        autoplay: false,
+        intervalMs: 4000,
+        loop: true,
       },
     })
   })

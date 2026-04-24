@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { HomepageModuleComponentKey } from '~/types/homepage'
+
 definePageMeta({
   layout: 'admin',
 })
@@ -21,10 +23,20 @@ const {
   removeCategory,
   addProduct,
   removeProduct,
+  createModule,
   saveDraft,
   publishDraft,
   resetDraft,
 } = await useHomepageEditor()
+
+const newModuleComponent = ref<HomepageModuleComponentKey>('image_slider1')
+const moduleOptions: Array<{ value: HomepageModuleComponentKey; label: string }> = [
+  { value: 'image_slider1', label: '圖片輪播 image_slider1' },
+  { value: 'hero3', label: '主視覺 hero3' },
+  { value: 'category_grid1', label: '分類格 category_grid1' },
+  { value: 'product_slider1', label: '商品輪播 product_slider1' },
+  { value: 'footer1', label: '頁尾 footer1' },
+]
 </script>
 
 <template>
@@ -60,6 +72,26 @@ const {
         @click="resetDraft"
       >
         放棄草稿改動
+      </button>
+      <label class="ml-2 text-sm text-neutral-700">
+        <span class="mr-2 text-xs text-neutral-500">新增模組</span>
+        <select
+          v-model="newModuleComponent"
+          class="rounded-md border border-neutral-300 bg-white px-2 py-2 text-sm text-neutral-700"
+          :disabled="saving || publishing || pending"
+        >
+          <option v-for="option in moduleOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+      </label>
+      <button
+        type="button"
+        class="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+        :disabled="saving || publishing || pending"
+        @click="createModule(newModuleComponent)"
+      >
+        + 新增
       </button>
       <span class="ml-auto text-xs text-neutral-500">
         已發佈版本：{{ hasPublished ? '有' : '尚未建立' }}

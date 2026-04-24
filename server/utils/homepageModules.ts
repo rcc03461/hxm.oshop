@@ -1,5 +1,5 @@
 import { and, asc, eq } from 'drizzle-orm'
-import { landingCategories, landingHero, landingProducts } from '../../app/data/landing'
+import { landingCategories, landingHero, landingProducts, landingSlides } from '../../app/data/landing'
 import * as schema from '../database/schema'
 import type { HomepageModule, HomepageVersionState } from '../../app/types/homepage'
 import { getDb } from './db'
@@ -27,20 +27,80 @@ const defaultModules: HomepageModule[] = [
     config: { title: '商品分類', categories: landingCategories },
   },
   {
+    moduleKey: 'main-image-slider',
+    moduleType: 'image_slider',
+    sortOrder: 3,
+    isEnabled: true,
+    config: {
+      title: '焦點主題',
+      slides: landingSlides.slice(0, 4).map((slide) => ({
+        id: slide.id,
+        imageUrl: slide.imageUrl,
+        alt: slide.title,
+        linkUrl: slide.cta?.to ?? '',
+      })),
+      ui: {
+        autoplay: true,
+        intervalMs: 4000,
+        loop: true,
+      },
+    },
+  },
+  {
     moduleKey: 'main-products',
     moduleType: 'products',
-    sortOrder: 3,
+    sortOrder: 4,
     isEnabled: true,
     config: { title: '精選商品', categories: landingCategories, products: landingProducts },
   },
   {
     moduleKey: 'main-footer',
     moduleType: 'footer',
-    sortOrder: 4,
+    sortOrder: 5,
     isEnabled: true,
     config: { text: '© OShop · oshop.com.hk' },
   },
 ]
+
+function normalizeModulesWithDefaults(items: HomepageModule[]): HomepageModule[] {
+  const source = items.length ? items : defaultModules
+  const output = source.map((item) => ({ ...item, config: structuredClone(item.config) }))
+
+  const hasImageSlider = output.some((item) => item.moduleType === 'image_slider')
+  if (!hasImageSlider) {
+    const footerIndex = output.findIndex((item) => item.moduleType === 'footer')
+    const sliderModule: HomepageModule<'image_slider'> = {
+      moduleKey: 'main-image-slider',
+      moduleType: 'image_slider',
+      sortOrder: 0,
+      isEnabled: true,
+      config: {
+        title: '焦點主題',
+        slides: landingSlides.slice(0, 4).map((slide) => ({
+          id: slide.id,
+          imageUrl: slide.imageUrl,
+          alt: slide.title,
+          linkUrl: slide.cta?.to ?? '',
+        })),
+        ui: {
+          autoplay: true,
+          intervalMs: 4000,
+          loop: true,
+        },
+      },
+    }
+    if (footerIndex >= 0) {
+      output.splice(footerIndex, 0, sliderModule)
+    } else {
+      output.push(sliderModule)
+    }
+  }
+
+  return output.map((item, idx) => ({
+    ...item,
+    sortOrder: idx,
+  }))
+}
 
 function normalizeModuleRow(row: {
   moduleKey: string
@@ -88,10 +148,19 @@ export async function ensureDraftModules(
   tenantId: string,
 ) {
   const existingDraft = await listHomepageModules(db, tenantId, 'draft')
-  if (existingDraft.length) return existingDraft
+  if (existingDraft.length) {
+    const normalizedDraft = normalizeModulesWithDefaults(existingDraft)
+    const changed =
+      normalizedDraft.length !== existingDraft.length
+      || normalizedDraft.some((item, idx) => item.moduleKey !== existingDraft[idx]?.moduleKey)
+    if (!changed) return existingDraft
+
+    await saveDraftModules(db, tenantId, normalizedDraft)
+    return await listHomepageModules(db, tenantId, 'draft')
+  }
 
   const published = await listHomepageModules(db, tenantId, 'published')
-  const source = published.length ? published : defaultModules
+  const source = normalizeModulesWithDefaults(published.length ? published : defaultModules)
 
   await db
     .delete(schema.tenantHomepageModules)
@@ -122,7 +191,7 @@ export async function resetDraftFromPublished(
   tenantId: string,
 ) {
   const published = await listHomepageModules(db, tenantId, 'published')
-  const source = published.length ? published : defaultModules
+  const source = normalizeModulesWithDefaults(published.length ? published : defaultModules)
   await db
     .delete(schema.tenantHomepageModules)
     .where(
@@ -204,10 +273,12 @@ export async function ensurePublishedModules(
   tenantId: string,
 ) {
   const published = await listHomepageModules(db, tenantId, 'published')
-  if (published.length) return published
+  if (published.length) {
+    return normalizeModulesWithDefaults(published)
+  }
 
   const draft = await listHomepageModules(db, tenantId, 'draft')
-  const source = draft.length ? draft : defaultModules
+  const source = normalizeModulesWithDefaults(draft.length ? draft : defaultModules)
 
   await db
     .delete(schema.tenantHomepageModules)
