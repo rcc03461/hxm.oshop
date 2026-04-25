@@ -179,3 +179,13 @@ docker compose ps
 127.0.0.1	shopgo.hk
 127.0.0.1	demo.shopgo.hk
 
+
+
+### 8) Production
+```
+git pull
+docker compose down
+docker compose up -d --build
+docker compose exec app npm run db:migrate
+docker logs -f hxm-oshop-app
+```
