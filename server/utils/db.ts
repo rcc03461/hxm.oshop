@@ -11,13 +11,16 @@ let db: ReturnType<typeof drizzle<typeof schema>> | null = null
 export function getDb(event: H3Event) {
   const config = useRuntimeConfig(event)
   const url = buildDatabaseUrl({
-    databaseUrl: config.databaseUrl as string,
-    dbHost: config.dbHost as string,
-    dbUser: config.dbUser as string,
-    dbPassword: config.dbPassword as string,
-    dbName: config.dbName as string,
-    dbPort: config.dbPort as string,
-    dbSslmode: config.dbSslmode as string,
+    databaseUrl: (config.databaseUrl as string) || process.env.DATABASE_URL,
+    dbHost: (config.dbHost as string) || process.env.db_host || process.env.DB_HOST,
+    dbUser: (config.dbUser as string) || process.env.db_user || process.env.DB_USER,
+    dbPassword:
+      (config.dbPassword as string) ||
+      process.env.db_password ||
+      process.env.DB_PASSWORD,
+    dbName: (config.dbName as string) || process.env.db_name || process.env.DB_NAME,
+    dbPort: (config.dbPort as string) || process.env.db_port || process.env.DB_PORT,
+    dbSslmode: (config.dbSslmode as string) || process.env.DB_SSLMODE,
   })
 
   if (!sql) {
