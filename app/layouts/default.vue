@@ -124,7 +124,7 @@ async function handleCustomerLogout() {
             :alt="`${tenantInfo.displayName} Logo`"
             class="h-6 w-6 rounded object-cover"
           >
-          <span>{{ tenantInfo?.displayName || 'OShop' }}</span>
+          <span>{{ tenantInfo?.displayName || 'Shopgo' }}</span>
         </NuxtLink>
         <nav v-if="showTopNav" class="flex flex-wrap items-center gap-3 text-sm">
           <NuxtLink
