@@ -9,10 +9,10 @@
     "preview": "node --max-old-space-size=4096 ./node_modules/nuxt/bin/nuxt.mjs preview",
     "postinstall": "nuxt prepare",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "bun scripts/db-migrate.ts",
+    "db:migrate": "tsx scripts/db-migrate.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed:catalog": "bun scripts/db-seed-catalog.ts"
+    "db:seed:catalog": "tsx scripts/db-seed-catalog.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.4.4",
@@ -38,6 +38,7 @@
     "@types/bcryptjs": "^3.0.0",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^25.6.0",
-    "@types/sanitize-html": "^2.16.1"
+    "@types/sanitize-html": "^2.16.1",
+    "tsx": "^4.21.0"
   }
 }

@@ -11,17 +11,13 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 3000
-      DB_SSLMODE: disable
-      db_host: db
-      db_port: 5432
-      db_user: ${POSTGRES_USER:-oshop}
-      db_password: ${POSTGRES_PASSWORD:-change-me}
-      db_name: ${POSTGRES_DB:-oshop}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-oshop}:${POSTGRES_PASSWORD:-change-me}@db:5432/${POSTGRES_DB:-oshop}?sslmode=disable
+      # 資料庫改由 VPS 上既有 PostgreSQL 提供，請在 .env 設定以下值：
+      # db_host, db_port, db_user, db_password, db_name（或直接給 DATABASE_URL）
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
     ports:
       - "127.0.0.1:3000:3000"
     healthcheck:
-      test: ["CMD-SHELL", "bun -e \"fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 30s
       timeout: 5s
       retries: 5
