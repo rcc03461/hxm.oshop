@@ -16,29 +16,44 @@ type Row = {
   updatedAt: string
 }
 
+type OrderStatus =
+  | 'pending_payment'
+  | 'paid'
+  | 'payment_failed'
+  | 'shipping'
+  | 'signed'
+
+const ORDER_STATUS_OPTIONS: Array<{ value: OrderStatus; label: string }> = [
+  { value: 'pending_payment', label: '待付款' },
+  { value: 'paid', label: '已付款' },
+  { value: 'payment_failed', label: '付款失敗' },
+  { value: 'shipping', label: '運送中' },
+  { value: 'signed', label: '已簽收' },
+]
+
 const q = ref('')
 const page = ref(1)
 const pageSize = ref(20)
-/** all | pending_payment | paid | payment_failed */
-const status = ref<string>('all')
+const status = ref<OrderStatus[]>([])
 
 const requestFetch = useRequestFetch()
 
 const { data, pending, refresh, error } = await useAsyncData(
   () =>
-    `admin-orders-${page.value}-${pageSize.value}-${status.value}-${q.value.trim() || '-'}`,
+    `admin-orders-${page.value}-${pageSize.value}-${status.value.join(',') || 'all'}-${q.value.trim() || '-'}`,
   async () => {
     return await requestFetch<{
       items: Row[]
       page: number
       pageSize: number
       total: number
+      statusCounts: Record<OrderStatus, number>
     }>('/api/admin/orders', {
       credentials: 'include',
       query: {
         page: page.value,
         pageSize: pageSize.value,
-        status: status.value,
+        ...(status.value.length > 0 ? { status: status.value.join(',') } : {}),
         ...(q.value.trim() ? { q: q.value.trim() } : {}),
       },
     })
@@ -71,6 +86,8 @@ function statusLabel(s: string) {
   if (s === 'paid') return '已付款'
   if (s === 'pending_payment') return '待付款'
   if (s === 'payment_failed') return '付款失敗'
+  if (s === 'shipping') return '運送中'
+  if (s === 'signed') return '已簽收'
   return s
 }
 
@@ -78,6 +95,8 @@ function statusClass(s: string) {
   if (s === 'paid') return 'text-emerald-700'
   if (s === 'pending_payment') return 'text-amber-700'
   if (s === 'payment_failed') return 'text-red-700'
+  if (s === 'shipping') return 'text-blue-700'
+  if (s === 'signed') return 'text-violet-700'
   return 'text-neutral-700'
 }
 
@@ -101,6 +120,15 @@ function onStatusChange() {
   page.value = 1
   void refresh()
 }
+
+const statusFilterOptions = computed(() => {
+  const counts = data.value?.statusCounts
+
+  return ORDER_STATUS_OPTIONS.map((option) => ({
+    ...option,
+    count: counts?.[option.value] ?? 0,
+  }))
+})
 </script>
 
 <template>
@@ -124,28 +152,16 @@ function onStatusChange() {
           @input="onSearchInput"
         />
       </div>
-      <div class="flex items-center gap-2">
-        <label class="text-xs font-medium text-neutral-500">狀態</label>
-        <select
-          v-model="status"
-          class="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm"
-          @change="onStatusChange"
-        >
-          <option value="all">
-            全部
-          </option>
-          <option value="pending_payment">
-            待付款
-          </option>
-          <option value="paid">
-            已付款
-          </option>
-          <option value="payment_failed">
-            付款失敗
-          </option>
-        </select>
-      </div>
     </div>
+
+    <AdminFilterRow
+      v-model="status"
+      label="狀態"
+      class="mt-4"
+      :options="statusFilterOptions"
+      :disabled="pending"
+      @change="onStatusChange"
+    />
 
     <p v-if="error" class="mt-4 text-sm text-red-600">
       無法載入列表，請確認已登入租戶後台。

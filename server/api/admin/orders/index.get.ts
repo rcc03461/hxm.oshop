@@ -1,4 +1,14 @@
-import { and, asc, count, desc, eq, ilike, or, type SQL } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  or,
+  type SQL,
+} from 'drizzle-orm'
 import * as schema from '../../../database/schema'
 import { getDb } from '../../../utils/db'
 import { requireTenantSession } from '../../../utils/requireTenantSession'
@@ -6,7 +16,13 @@ import { requireTenantSession } from '../../../utils/requireTenantSession'
 const DEFAULT_PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
 
-const ORDER_STATUSES = ['pending_payment', 'paid', 'payment_failed'] as const
+const ORDER_STATUSES = [
+  'pending_payment',
+  'paid',
+  'payment_failed',
+  'shipping',
+  'signed',
+] as const
 type OrderStatus = (typeof ORDER_STATUSES)[number]
 
 const UUID_RE =
@@ -14,6 +30,22 @@ const UUID_RE =
 
 function isOrderStatus(v: string): v is OrderStatus {
   return (ORDER_STATUSES as readonly string[]).includes(v)
+}
+
+function parseOrderStatuses(raw: unknown): OrderStatus[] {
+  const values = Array.isArray(raw)
+    ? raw.flatMap((item) => String(item).split(','))
+    : typeof raw === 'string'
+      ? raw.split(',')
+      : []
+
+  return Array.from(
+    new Set(
+      values
+        .map((item) => item.trim())
+        .filter((item): item is OrderStatus => isOrderStatus(item)),
+    ),
+  )
 }
 
 function searchCondition(search: string): SQL | undefined {
@@ -37,25 +69,53 @@ export default defineEventHandler(async (event) => {
   )
   const search =
     typeof q.q === 'string' && q.q.trim().length > 0 ? q.q.trim() : ''
-  const statusRaw = typeof q.status === 'string' ? q.status.trim() : ''
+  const selectedStatuses = parseOrderStatuses(q.status)
 
   const tenantId = session.tenantId
   const db = getDb(event)
 
-  const parts: SQL[] = [eq(schema.shopOrders.tenantId, tenantId)]
+  const baseParts: SQL[] = [eq(schema.shopOrders.tenantId, tenantId)]
   const sc = searchCondition(search)
-  if (sc) parts.push(sc)
-  if (statusRaw && statusRaw !== 'all' && isOrderStatus(statusRaw)) {
-    parts.push(eq(schema.shopOrders.status, statusRaw))
+  if (sc) baseParts.push(sc)
+  const baseWhereClause =
+    baseParts.length === 1 ? baseParts[0]! : and(...baseParts)!
+
+  const parts = [...baseParts]
+  if (selectedStatuses.length === 1) {
+    parts.push(eq(schema.shopOrders.status, selectedStatuses[0]!))
+  } else if (selectedStatuses.length > 1) {
+    parts.push(inArray(schema.shopOrders.status, selectedStatuses))
   }
   const whereClause = parts.length === 1 ? parts[0]! : and(...parts)!
 
-  const [totalRow] = await db
-    .select({ total: count() })
-    .from(schema.shopOrders)
-    .where(whereClause)
+  const [totalRow, statusCountRows] = await Promise.all([
+    db
+      .select({ total: count() })
+      .from(schema.shopOrders)
+      .where(whereClause),
+    db
+      .select({
+        status: schema.shopOrders.status,
+        total: count(),
+      })
+      .from(schema.shopOrders)
+      .where(baseWhereClause)
+      .groupBy(schema.shopOrders.status),
+  ])
 
-  const total = Number(totalRow?.total ?? 0)
+  const total = Number(totalRow[0]?.total ?? 0)
+  const statusCounts = ORDER_STATUSES.reduce(
+    (acc, s) => {
+      acc[s] = 0
+      return acc
+    },
+    {} as Record<OrderStatus, number>,
+  )
+  for (const row of statusCountRows) {
+    if (isOrderStatus(row.status)) {
+      statusCounts[row.status] = Number(row.total ?? 0)
+    }
+  }
   const offset = (page - 1) * pageSize
 
   const rows = await db
@@ -88,5 +148,6 @@ export default defineEventHandler(async (event) => {
     page,
     pageSize,
     total,
+    statusCounts,
   }
 })

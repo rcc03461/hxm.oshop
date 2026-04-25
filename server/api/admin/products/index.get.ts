@@ -1,10 +1,59 @@
-import { and, asc, count, desc, eq, ilike, inArray, isNull, or } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  ilike,
+  inArray,
+  isNull,
+  or,
+  type SQL,
+} from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import * as schema from '../../../database/schema'
 import { getDb } from '../../../utils/db'
 import { requireTenantSession } from '../../../utils/requireTenantSession'
 
 const DEFAULT_PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
+const PRODUCT_STATUSES = ['active', 'inactive'] as const
+type ProductStatus = (typeof PRODUCT_STATUSES)[number]
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function isProductStatus(v: string): v is ProductStatus {
+  return (PRODUCT_STATUSES as readonly string[]).includes(v)
+}
+
+function parseCsvValues(raw: unknown) {
+  return Array.isArray(raw)
+    ? raw.flatMap((item) => String(item).split(','))
+    : typeof raw === 'string'
+      ? raw.split(',')
+      : []
+}
+
+function parseProductStatuses(raw: unknown): ProductStatus[] {
+  return Array.from(
+    new Set(
+      parseCsvValues(raw)
+        .map((item) => item.trim())
+        .filter((item): item is ProductStatus => isProductStatus(item)),
+    ),
+  )
+}
+
+function parseUuidList(raw: unknown) {
+  return Array.from(
+    new Set(
+      parseCsvValues(raw)
+        .map((item) => item.trim())
+        .filter((item) => UUID_RE.test(item)),
+    ),
+  )
+}
 
 export default defineEventHandler(async (event) => {
   const session = await requireTenantSession(event)
@@ -16,26 +65,100 @@ export default defineEventHandler(async (event) => {
   )
   const search =
     typeof q.q === 'string' && q.q.trim().length > 0 ? q.q.trim() : ''
+  const selectedStatuses = parseProductStatuses(q.status)
+  const selectedCategoryIds = parseUuidList(q.categoryId)
 
   const db = getDb(event)
   const tenantId = session.tenantId
 
-  const whereClause = search
-    ? and(
-        eq(schema.products.tenantId, tenantId),
-        or(
-          ilike(schema.products.title, `%${search}%`),
-          ilike(schema.products.slug, `%${search}%`),
-        ),
+  const searchClause = search
+    ? or(
+        ilike(schema.products.title, `%${search}%`),
+        ilike(schema.products.slug, `%${search}%`),
       )
-    : eq(schema.products.tenantId, tenantId)
+    : undefined
 
-  const [totalRow] = await db
-    .select({ total: count() })
-    .from(schema.products)
-    .where(whereClause)
+  const statusClause =
+    selectedStatuses.length === 1
+      ? eq(schema.products.status, selectedStatuses[0]!)
+      : selectedStatuses.length > 1
+        ? inArray(schema.products.status, selectedStatuses)
+        : undefined
 
-  const total = Number(totalRow?.total ?? 0)
+  const categoryClause =
+    selectedCategoryIds.length > 0
+      ? exists(
+          db
+            .select({ n: sql`1` })
+            .from(schema.productCategories)
+            .where(
+              and(
+                eq(schema.productCategories.productId, schema.products.id),
+                inArray(schema.productCategories.categoryId, selectedCategoryIds),
+              ),
+            ),
+        )
+      : undefined
+
+  const baseParts: SQL[] = [eq(schema.products.tenantId, tenantId)]
+  if (searchClause) baseParts.push(searchClause)
+
+  const parts = [...baseParts]
+  if (statusClause) parts.push(statusClause)
+  if (categoryClause) parts.push(categoryClause)
+  const whereClause = and(...parts)
+
+  const statusCountParts = [...baseParts]
+  if (categoryClause) statusCountParts.push(categoryClause)
+  const statusCountWhereClause = and(...statusCountParts)
+
+  const categoryCountParts = [...baseParts]
+  if (statusClause) categoryCountParts.push(statusClause)
+  const categoryCountWhereClause = and(...categoryCountParts)
+
+  const [totalRow, statusCountRows, categoryCountRows] = await Promise.all([
+    db
+      .select({ total: count() })
+      .from(schema.products)
+      .where(whereClause),
+    db
+      .select({
+        status: schema.products.status,
+        total: count(),
+      })
+      .from(schema.products)
+      .where(statusCountWhereClause)
+      .groupBy(schema.products.status),
+    db
+      .select({
+        categoryId: schema.productCategories.categoryId,
+        total: count(),
+      })
+      .from(schema.productCategories)
+      .innerJoin(
+        schema.products,
+        eq(schema.productCategories.productId, schema.products.id),
+      )
+      .where(categoryCountWhereClause)
+      .groupBy(schema.productCategories.categoryId),
+  ])
+
+  const total = Number(totalRow[0]?.total ?? 0)
+  const statusCounts = PRODUCT_STATUSES.reduce(
+    (acc, status) => {
+      acc[status] = 0
+      return acc
+    },
+    {} as Record<ProductStatus, number>,
+  )
+  for (const row of statusCountRows) {
+    if (isProductStatus(row.status)) {
+      statusCounts[row.status] = Number(row.total ?? 0)
+    }
+  }
+  const categoryCounts = Object.fromEntries(
+    categoryCountRows.map((row) => [row.categoryId, Number(row.total ?? 0)]),
+  )
   const offset = (page - 1) * pageSize
 
   const rows = await db
@@ -43,6 +166,7 @@ export default defineEventHandler(async (event) => {
       id: schema.products.id,
       slug: schema.products.slug,
       title: schema.products.title,
+      status: schema.products.status,
       basePrice: schema.products.basePrice,
       originalPrice: schema.products.originalPrice,
       coverAttachmentId: schema.products.coverAttachmentId,
@@ -151,5 +275,7 @@ export default defineEventHandler(async (event) => {
     page,
     pageSize,
     total,
+    statusCounts,
+    categoryCounts,
   }
 })

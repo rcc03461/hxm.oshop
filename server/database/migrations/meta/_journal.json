@@ -120,6 +120,13 @@
       "when": 1777320000000,
       "tag": "0016_homepage_image_slider_module_type",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1777365600000,
+      "tag": "0017_products_status",
+      "breakpoints": true
     }
   ]
 }

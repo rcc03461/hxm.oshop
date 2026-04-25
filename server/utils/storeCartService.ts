@@ -129,7 +129,13 @@ export async function getStoreCartLines(event: H3Event, cartId: string) {
             basePrice: schema.products.basePrice,
           })
           .from(schema.products)
-          .where(inArray(schema.products.id, productIds))
+          .where(
+            and(
+              inArray(schema.products.id, productIds),
+              eq(schema.products.tenantId, tenantId),
+              eq(schema.products.status, 'active'),
+            ),
+          )
       : []
   const productMap = new Map(products.map((p) => [p.id, p]))
 
@@ -349,7 +355,11 @@ export async function fetchProductSnapshots(
     })
     .from(schema.products)
     .where(
-      and(eq(schema.products.id, productId), eq(schema.products.tenantId, tenantId)),
+      and(
+        eq(schema.products.id, productId),
+        eq(schema.products.tenantId, tenantId),
+        eq(schema.products.status, 'active'),
+      ),
     )
     .limit(1)
   if (!product) return null

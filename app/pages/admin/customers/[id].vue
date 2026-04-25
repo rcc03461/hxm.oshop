@@ -64,6 +64,8 @@ function orderStatusLabel(s: string) {
   if (s === 'paid') return '已付款'
   if (s === 'pending_payment') return '待付款'
   if (s === 'payment_failed') return '付款失敗'
+  if (s === 'shipping') return '運送中'
+  if (s === 'signed') return '已簽收'
   return s
 }
 

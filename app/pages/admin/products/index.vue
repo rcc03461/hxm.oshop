@@ -7,6 +7,7 @@ type Row = {
   id: string
   slug: string
   title: string
+  status: string
   basePrice: string
   originalPrice: string | null
   updatedAt: string
@@ -15,32 +16,74 @@ type Row = {
   categorySummary: string
 }
 
+type Category = {
+  id: string
+  name: string
+}
+
+type ProductStatus = 'active' | 'inactive'
+
+const PRODUCT_STATUS_OPTIONS: Array<{ value: ProductStatus; label: string }> = [
+  { value: 'active', label: '上線' },
+  { value: 'inactive', label: '下線' },
+]
+
 const q = ref('')
 const page = ref(1)
 const pageSize = ref(20)
+const status = ref<ProductStatus[]>([])
+const categoryIds = ref<string[]>([])
 
 /** SSR 時須沿用當前請求的 Cookie/Host，否則內部 /api/admin/* 會拿不到登入態或租戶 Host。 */
 const requestFetch = useRequestFetch()
 
 const { data, pending, refresh, error } = await useAsyncData(
   () =>
-    `admin-products-${page.value}-${pageSize.value}-${q.value.trim() || '-'}`,
+    [
+      'admin-products',
+      page.value,
+      pageSize.value,
+      status.value.join(',') || 'all-status',
+      categoryIds.value.join(',') || 'all-categories',
+      q.value.trim() || '-',
+    ].join('-'),
   async () => {
     return await requestFetch<{
       items: Row[]
       page: number
       pageSize: number
       total: number
+      statusCounts: Record<ProductStatus, number>
+      categoryCounts: Record<string, number>
     }>('/api/admin/products', {
       credentials: 'include',
       query: {
         page: page.value,
         pageSize: pageSize.value,
+        ...(status.value.length > 0 ? { status: status.value.join(',') } : {}),
+        ...(categoryIds.value.length > 0
+          ? { categoryId: categoryIds.value.join(',') }
+          : {}),
         ...(q.value.trim() ? { q: q.value.trim() } : {}),
       },
     })
   },
   { watch: [page, pageSize] },
+)
+
+const { data: categoriesData, pending: categoriesPending } = await useAsyncData(
+  'admin-product-filter-categories',
+  () =>
+    requestFetch<{
+      items: Category[]
+      total: number
+    }>('/api/admin/categories', {
+      credentials: 'include',
+      query: {
+        page: 1,
+        pageSize: 100,
+      },
+    }),
 )
 
 const { data: attachmentStats } = await useAsyncData(
@@ -70,6 +113,18 @@ function formatTime(iso: string) {
   }
 }
 
+function statusLabel(s: string) {
+  if (s === 'active') return '上線'
+  if (s === 'inactive') return '下線'
+  return s
+}
+
+function statusClass(s: string) {
+  if (s === 'active') return 'text-emerald-700'
+  if (s === 'inactive') return 'text-neutral-500'
+  return 'text-neutral-700'
+}
+
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 function onSearchInput() {
   if (searchTimer) clearTimeout(searchTimer)
@@ -78,6 +133,26 @@ function onSearchInput() {
     void refresh()
   }, 300)
 }
+
+function onFilterChange() {
+  page.value = 1
+  void refresh()
+}
+
+const statusFilterOptions = computed(() =>
+  PRODUCT_STATUS_OPTIONS.map((option) => ({
+    ...option,
+    count: data.value?.statusCounts?.[option.value] ?? 0,
+  })),
+)
+
+const categoryFilterOptions = computed(() =>
+  (categoriesData.value?.items ?? []).map((category) => ({
+    value: category.id,
+    label: category.name,
+    count: data.value?.categoryCounts?.[category.id] ?? 0,
+  })),
+)
 </script>
 
 <template>
@@ -107,6 +182,23 @@ function onSearchInput() {
       />
     </div>
 
+    <div class="mt-4 space-y-2">
+      <AdminFilterRow
+        v-model="status"
+        label="狀態"
+        :options="statusFilterOptions"
+        :disabled="pending"
+        @change="onFilterChange"
+      />
+      <AdminFilterRow
+        v-model="categoryIds"
+        label="分類"
+        :options="categoryFilterOptions"
+        :disabled="pending || categoriesPending"
+        @change="onFilterChange"
+      />
+    </div>
+
     <p v-if="error" class="mt-4 text-sm text-red-600">
       無法載入列表，請確認已登入租戶後台。
     </p>
@@ -119,6 +211,7 @@ function onSearchInput() {
         <thead class="bg-neutral-50 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
           <tr>
             <th class="px-4 py-3">名稱</th>
+            <th class="px-4 py-3">狀態</th>
             <th class="px-4 py-3">Slug</th>
             <th class="px-4 py-3">SKU 數</th>
             <th class="px-4 py-3">分類</th>
@@ -130,12 +223,12 @@ function onSearchInput() {
         </thead>
         <tbody class="divide-y divide-neutral-200">
           <tr v-if="pending">
-            <td colspan="8" class="px-4 py-6 text-center text-neutral-500">
+            <td colspan="9" class="px-4 py-6 text-center text-neutral-500">
               載入中…
             </td>
           </tr>
           <tr v-else-if="!data?.items.length">
-            <td colspan="8" class="px-4 py-6 text-center text-neutral-500">
+            <td colspan="9" class="px-4 py-6 text-center text-neutral-500">
               尚無商品
             </td>
           </tr>
@@ -146,6 +239,11 @@ function onSearchInput() {
           >
             <td class="px-4 py-3 font-medium text-neutral-900">
               {{ row.title }}
+            </td>
+            <td class="whitespace-nowrap px-4 py-3">
+              <span :class="['text-sm font-medium', statusClass(row.status)]">
+                {{ statusLabel(row.status) }}
+              </span>
             </td>
             <td class="px-4 py-3 font-mono text-xs text-neutral-700">
               {{ row.slug }}

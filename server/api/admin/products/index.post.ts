@@ -29,6 +29,7 @@ export default defineEventHandler(async (event) => {
           slug: data.slug,
           title: data.title,
           description: data.description ?? null,
+          status: data.status,
           basePrice: data.basePrice,
           originalPrice: data.originalPrice ?? null,
           coverAttachmentId: null,

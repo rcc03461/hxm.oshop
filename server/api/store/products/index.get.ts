@@ -84,7 +84,10 @@ export default defineEventHandler(async (event) => {
       )
     : undefined
 
-  const conditions = [eq(schema.products.tenantId, tenantId)]
+  const conditions = [
+    eq(schema.products.tenantId, tenantId),
+    eq(schema.products.status, 'active'),
+  ]
   if (searchClause) conditions.push(searchClause)
   if (categoryClause) conditions.push(categoryClause)
   const whereClause = and(...conditions)

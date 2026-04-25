@@ -9,6 +9,7 @@ const form = reactive({
   title: '',
   slug: '',
   description: '',
+  status: 'active' as 'active' | 'inactive',
   basePrice: '0',
   originalPrice: '',
 })
@@ -31,6 +32,7 @@ async function submit() {
         title: form.title,
         slug: form.slug,
         description: form.description || null,
+        status: form.status,
         basePrice: form.basePrice,
         originalPrice: form.originalPrice || null,
         coverAttachmentId: coverAttachmentId.value,
@@ -73,6 +75,20 @@ async function submit() {
       />
 
       <AdminFormTextarea v-model="form.description" label="描述" :rows="4" />
+
+      <AdminFormField label="狀態">
+        <select
+          v-model="form.status"
+          class="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm"
+        >
+          <option value="active">
+            上線
+          </option>
+          <option value="inactive">
+            下線
+          </option>
+        </select>
+      </AdminFormField>
 
       <AdminFormPriceInput
         v-model="form.basePrice"

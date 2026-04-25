@@ -68,6 +68,7 @@ export default defineEventHandler(async (event) => {
       if (patch.title !== undefined) next.title = patch.title
       if (patch.slug !== undefined) next.slug = patch.slug
       if (patch.description !== undefined) next.description = patch.description
+      if (patch.status !== undefined) next.status = patch.status
       if (patch.basePrice !== undefined) next.basePrice = patch.basePrice
       if (patch.originalPrice !== undefined) {
         next.originalPrice = patch.originalPrice
@@ -77,6 +78,7 @@ export default defineEventHandler(async (event) => {
         patch.title !== undefined ||
         patch.slug !== undefined ||
         patch.description !== undefined ||
+        patch.status !== undefined ||
         patch.basePrice !== undefined ||
         patch.originalPrice !== undefined
 

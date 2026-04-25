@@ -40,6 +40,15 @@ const { data, error } = await useAsyncData(
   () => requestFetch<{ order: OrderDetail }>(`/api/store/orders/${encodeURIComponent(orderUuid.value)}`),
   { watch: [orderUuid] },
 )
+
+function statusLabel(s: string) {
+  if (s === 'paid') return '已付款'
+  if (s === 'pending_payment') return '待付款'
+  if (s === 'payment_failed') return '付款失敗'
+  if (s === 'shipping') return '運送中'
+  if (s === 'signed') return '已簽收'
+  return s
+}
 </script>
 
 <template>
@@ -73,7 +82,7 @@ const { data, error } = await useAsyncData(
         <template v-else-if="data">
           <h1 class="mt-4 text-2xl font-semibold tracking-tight text-neutral-900">訂單 {{ data.order.orderUuid }}</h1>
           <p class="mt-2 text-sm text-neutral-600">
-            狀態：{{ data.order.status }} · 建立時間：{{ new Date(data.order.createdAt).toLocaleString() }}
+            狀態：{{ statusLabel(data.order.status) }} · 建立時間：{{ new Date(data.order.createdAt).toLocaleString() }}
           </p>
           <p class="mt-1 text-sm text-neutral-600">
             付款方式：{{ data.order.paymentProvider || '-' }} · Email：{{ data.order.customerEmail || '-' }}

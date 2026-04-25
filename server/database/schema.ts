@@ -176,6 +176,7 @@ export const products = pgTable(
     slug: varchar('slug', { length: 255 }).notNull(),
     title: varchar('title', { length: 255 }).notNull(),
     description: text('description'),
+    status: varchar('status', { length: 32 }).notNull().default('active'),
     basePrice: numeric('base_price', { precision: 14, scale: 4 })
       .notNull()
       .default('0'),
@@ -194,6 +195,7 @@ export const products = pgTable(
   (t) => [
     uniqueIndex('products_tenant_id_slug_uidx').on(t.tenantId, t.slug),
     index('products_tenant_id_idx').on(t.tenantId),
+    index('products_tenant_status_idx').on(t.tenantId, t.status),
   ],
 )
 

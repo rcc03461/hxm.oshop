@@ -26,6 +26,15 @@ if (!customer.value) {
 const { data, error } = await useAsyncData('store-orders-list', () =>
   requestFetch<{ orders: OrderRow[] }>('/api/store/orders'),
 )
+
+function statusLabel(s: string) {
+  if (s === 'paid') return '已付款'
+  if (s === 'pending_payment') return '待付款'
+  if (s === 'payment_failed') return '付款失敗'
+  if (s === 'shipping') return '運送中'
+  if (s === 'signed') return '已簽收'
+  return s
+}
 </script>
 
 <template>
@@ -69,7 +78,7 @@ const { data, error } = await useAsyncData('store-orders-list', () =>
               <p class="mt-1 text-xs text-neutral-500">{{ new Date(o.createdAt).toLocaleString() }}</p>
             </div>
             <div class="flex items-center gap-3">
-              <span class="rounded bg-neutral-100 px-2 py-1 text-xs text-neutral-700">{{ o.status }}</span>
+              <span class="rounded bg-neutral-100 px-2 py-1 text-xs text-neutral-700">{{ statusLabel(o.status) }}</span>
               <span class="text-sm font-semibold text-neutral-900">{{ formatHkd(o.total) }}</span>
               <NuxtLink :to="`/profile/orders/${o.orderUuid}`" class="text-sm text-neutral-700 underline">查看</NuxtLink>
             </div>

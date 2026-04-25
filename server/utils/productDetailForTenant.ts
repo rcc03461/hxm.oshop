@@ -46,10 +46,16 @@ export async function loadProductDetailForTenant(
       ? and(
           eq(schema.products.id, finder.productId),
           eq(schema.products.tenantId, tenantId),
+          ...(attachmentMode === 'public'
+            ? [eq(schema.products.status, 'active')]
+            : []),
         )
       : and(
           eq(schema.products.slug, finder.slug),
           eq(schema.products.tenantId, tenantId),
+          ...(attachmentMode === 'public'
+            ? [eq(schema.products.status, 'active')]
+            : []),
         )
 
   const [product] = await db
@@ -224,6 +230,7 @@ export async function loadProductDetailForTenant(
       slug: product.slug,
       title: product.title,
       description: product.description,
+      status: product.status,
       basePrice: String(product.basePrice),
       originalPrice: product.originalPrice ? String(product.originalPrice) : null,
       coverAttachmentId: product.coverAttachmentId,

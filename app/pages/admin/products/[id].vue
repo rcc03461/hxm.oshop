@@ -27,6 +27,7 @@ type Detail = {
     slug: string
     title: string
     description: string | null
+    status: string
     basePrice: string
     originalPrice: string | null
     coverAttachmentId: string | null
@@ -73,6 +74,7 @@ const form = reactive({
   title: '',
   slug: '',
   description: '',
+  status: 'active' as 'active' | 'inactive',
   basePrice: '0',
   originalPrice: '',
 })
@@ -96,6 +98,8 @@ watch(
     form.title = v.product.title
     form.slug = v.product.slug
     form.description = v.product.description ?? ''
+    form.status =
+      v.product.status === 'inactive' ? 'inactive' : 'active'
     form.basePrice = v.product.basePrice
     form.originalPrice = v.product.originalPrice ?? ''
     coverAttachmentId.value = v.product.coverAttachmentId
@@ -119,6 +123,7 @@ async function saveMain() {
         title: form.title,
         slug: form.slug,
         description: form.description || null,
+        status: form.status,
         basePrice: form.basePrice,
         originalPrice: form.originalPrice || null,
         coverAttachmentId: coverAttachmentId.value,
@@ -227,6 +232,20 @@ const coverPreview = computed<ProductMediaItem | null>(() => {
         />
 
         <AdminFormTextarea v-model="form.description" label="描述" :rows="4" />
+
+        <AdminFormField label="狀態">
+          <select
+            v-model="form.status"
+            class="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm"
+          >
+            <option value="active">
+              上線
+            </option>
+            <option value="inactive">
+              下線
+            </option>
+          </select>
+        </AdminFormField>
 
         <AdminFormPriceInput
           v-model="form.basePrice"

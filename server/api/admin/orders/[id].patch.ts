@@ -7,7 +7,13 @@ import { requireTenantSession } from '../../../utils/requireTenantSession'
 
 const orderIdParamSchema = z.string().uuid('訂單 id 格式不正確')
 
-const ORDER_STATUSES = ['pending_payment', 'paid', 'payment_failed'] as const
+const ORDER_STATUSES = [
+  'pending_payment',
+  'paid',
+  'payment_failed',
+  'shipping',
+  'signed',
+] as const
 const patchBodySchema = z.object({
   status: z.enum(ORDER_STATUSES, { message: '訂單狀態不正確' }),
 })

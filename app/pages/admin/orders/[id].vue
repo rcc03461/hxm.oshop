@@ -35,6 +35,21 @@ type Detail = {
   lines: Line[]
 }
 
+type OrderStatus =
+  | 'pending_payment'
+  | 'paid'
+  | 'payment_failed'
+  | 'shipping'
+  | 'signed'
+
+const ORDER_STATUS_OPTIONS: Array<{ value: OrderStatus; label: string }> = [
+  { value: 'pending_payment', label: '待付款' },
+  { value: 'paid', label: '已付款' },
+  { value: 'payment_failed', label: '付款失敗' },
+  { value: 'shipping', label: '運送中' },
+  { value: 'signed', label: '已簽收' },
+]
+
 const requestFetch = useRequestFetch()
 
 const { data, error, refresh } = await useAsyncData(
@@ -72,6 +87,8 @@ function statusLabel(s: string) {
   if (s === 'paid') return '已付款'
   if (s === 'pending_payment') return '待付款'
   if (s === 'payment_failed') return '付款失敗'
+  if (s === 'shipping') return '運送中'
+  if (s === 'signed') return '已簽收'
   return s
 }
 
@@ -79,6 +96,8 @@ function statusPillClass(s: string) {
   if (s === 'paid') return 'bg-emerald-50 text-emerald-800 ring-emerald-200'
   if (s === 'pending_payment') return 'bg-amber-50 text-amber-900 ring-amber-200'
   if (s === 'payment_failed') return 'bg-red-50 text-red-800 ring-red-200'
+  if (s === 'shipping') return 'bg-blue-50 text-blue-800 ring-blue-200'
+  if (s === 'signed') return 'bg-violet-50 text-violet-800 ring-violet-200'
   return 'bg-neutral-100 text-neutral-800 ring-neutral-200'
 }
 
@@ -93,18 +112,20 @@ function shippingField(v: unknown) {
   return typeof v === 'string' && v.trim() ? v.trim() : '—'
 }
 
-const statusDraft = ref<'pending_payment' | 'paid' | 'payment_failed'>(
-  'pending_payment',
-)
+const statusDraft = ref<OrderStatus>('pending_payment')
 const savingStatus = ref(false)
 const saveStatusErr = ref<string | null>(null)
 const saveStatusOk = ref(false)
+
+function isOrderStatus(v: string): v is OrderStatus {
+  return ORDER_STATUS_OPTIONS.some((option) => option.value === v)
+}
 
 watch(
   () => data.value?.order.status,
   (v) => {
     if (!v) return
-    if (v === 'pending_payment' || v === 'paid' || v === 'payment_failed') {
+    if (isOrderStatus(v)) {
       statusDraft.value = v
     }
   },
@@ -318,14 +339,12 @@ async function saveStatus() {
             v-model="statusDraft"
             class="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm"
           >
-            <option value="pending_payment">
-              待付款
-            </option>
-            <option value="paid">
-              已付款
-            </option>
-            <option value="payment_failed">
-              付款失敗
+            <option
+              v-for="option in ORDER_STATUS_OPTIONS"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
             </option>
           </select>
           <button

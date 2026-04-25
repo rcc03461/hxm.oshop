@@ -76,7 +76,11 @@ export async function resolveCheckoutLines(
       })
       .from(schema.products)
       .where(
-        and(eq(schema.products.id, it.productId), eq(schema.products.tenantId, tenantId)),
+        and(
+          eq(schema.products.id, it.productId),
+          eq(schema.products.tenantId, tenantId),
+          eq(schema.products.status, 'active'),
+        ),
       )
       .limit(1)
 

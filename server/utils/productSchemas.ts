@@ -20,6 +20,10 @@ const categoryIdsSchema = z
   .array(z.string().uuid())
   .max(64, '單一商品最多 64 個分類')
 
+export const productStatusSchema = z.enum(['active', 'inactive'], {
+  message: '商品狀態不正確',
+})
+
 export const adminCreateProductBodySchema = z.object({
   title: z.string().trim().min(1, '請填寫名稱').max(255),
   slug: productSlugSchema,
@@ -30,6 +34,7 @@ export const adminCreateProductBodySchema = z.object({
     .optional()
     .nullable()
     .transform((v) => (v === '' ? null : v)),
+  status: productStatusSchema.optional().default('active'),
   basePrice: decimalStringSchema,
   originalPrice: decimalStringSchema.optional().nullable(),
   coverAttachmentId: uuidNullable.optional(),
@@ -47,6 +52,7 @@ export const adminPatchProductBodySchema = z.object({
     .optional()
     .nullable()
     .transform((v) => (v === '' ? null : v)),
+  status: productStatusSchema.optional(),
   basePrice: decimalStringSchema.optional(),
   originalPrice: decimalStringSchema.optional().nullable(),
   coverAttachmentId: uuidNullable.optional(),
