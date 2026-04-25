@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { landingHero, landingSlides } from '~/data/landing'
 import type { LandingCategory, LandingProductCard } from '~/types/landing'
-import type { HomepageDynamicModule, HomepageModule } from '~/types/homepage'
-import { resolveDynamicHomepageModules } from '~/utils/homepageModuleResolvers'
+import type { HomepageDynamicModule, HomepageModule, HomepageProductSliderProps } from '~/types/homepage'
+import { collectHomepageProductCategoryIds, resolveDynamicHomepageModules } from '~/utils/homepageModuleResolvers'
 import { toDynamicHomepageModule } from '~/utils/homepageEditor'
 
 definePageMeta({
@@ -11,6 +11,51 @@ definePageMeta({
 
 const tenantSlug = useState<string | null>('oshop-tenant-slug')
 const requestFetch = useRequestFetch()
+
+const {
+  data: tenantHomepageModulesData,
+  pending: tenantHomepageModulesPending,
+} = await useAsyncData(
+  () => `tenant-homepage-modules-${tenantSlug.value ?? ''}`,
+  async () => {
+    if (!tenantSlug.value) {
+      return {
+        items: [] as HomepageModule[],
+        dynamicItems: [] as HomepageDynamicModule[],
+      }
+    }
+    const fetchApi = import.meta.server ? requestFetch : $fetch
+    try {
+      const res = await (fetchApi as any)('/api/store/homepage/modules')
+      return {
+        items: (res?.items ?? []) as HomepageModule[],
+        dynamicItems: (res?.dynamicItems ?? []) as HomepageDynamicModule[],
+      }
+    } catch {
+      // 尚未發佈首頁模組時，回退到既有首頁區塊，避免整頁錯誤。
+      return {
+        items: [] as HomepageModule[],
+        dynamicItems: [] as HomepageDynamicModule[],
+      }
+    }
+  },
+  { watch: [tenantSlug] },
+)
+
+function getHomepageSourceModules(
+  data: { items: HomepageModule[]; dynamicItems: HomepageDynamicModule[] } | null | undefined,
+) {
+  return data?.dynamicItems?.length
+    ? data.dynamicItems
+    : (data?.items ?? []).map((item) => toDynamicHomepageModule(item))
+}
+
+function hasManualProductSlider(modules: HomepageDynamicModule[]) {
+  return modules.some((module) => {
+    if (!module.isEnabled || module.component !== 'product_slider1') return false
+    return (module.props as HomepageProductSliderProps).source?.type === 'manual'
+  })
+}
 
 const {
   data: tenantLandingData,
@@ -38,8 +83,17 @@ const {
       label: category.name,
     }))
 
+    const sourceModules = getHomepageSourceModules(tenantHomepageModulesData.value)
+    const shouldLoadAllCategoryProducts =
+      sourceModules.length === 0 || hasManualProductSlider(sourceModules)
+    const requestedCategoryIds = shouldLoadAllCategoryProducts
+      ? categories.map((category) => category.id)
+      : collectHomepageProductCategoryIds(sourceModules)
+    const requestedCategoryIdSet = new Set(requestedCategoryIds)
+    const requestedCategories = categories.filter((category) => requestedCategoryIdSet.has(category.id))
+
     const productResponses = await Promise.allSettled(
-      categories.map(async (category) => {
+      requestedCategories.map(async (category) => {
         const res = await (fetchApi as any)('/api/store/products', {
           query: {
             categoryId: category.id,
@@ -83,38 +137,7 @@ const {
         .flatMap((result) => result.value),
     }
   },
-  { watch: [tenantSlug] },
-)
-
-const {
-  data: tenantHomepageModulesData,
-  pending: tenantHomepageModulesPending,
-  refresh: refreshTenantHomepageModules,
-} = await useAsyncData(
-  () => `tenant-homepage-modules-${tenantSlug.value ?? ''}`,
-  async () => {
-    if (!tenantSlug.value) {
-      return {
-        items: [] as HomepageModule[],
-        dynamicItems: [] as HomepageDynamicModule[],
-      }
-    }
-    const fetchApi = import.meta.server ? requestFetch : $fetch
-    try {
-      const res = await (fetchApi as any)('/api/store/homepage/modules')
-      return {
-        items: (res?.items ?? []) as HomepageModule[],
-        dynamicItems: (res?.dynamicItems ?? []) as HomepageDynamicModule[],
-      }
-    } catch {
-      // 尚未發佈首頁模組時，回退到既有首頁區塊，避免整頁錯誤。
-      return {
-        items: [] as HomepageModule[],
-        dynamicItems: [] as HomepageDynamicModule[],
-      }
-    }
-  },
-  { watch: [tenantSlug] },
+  { watch: [tenantSlug, tenantHomepageModulesData] },
 )
 
 const tenantLandingCategories = computed(
@@ -127,9 +150,7 @@ const tenantLandingProducts = computed(
 
 const enabledHomepageModules = computed(() =>
   resolveDynamicHomepageModules(
-    (tenantHomepageModulesData.value?.dynamicItems?.length
-      ? tenantHomepageModulesData.value.dynamicItems
-      : (tenantHomepageModulesData.value?.items ?? []).map((item) => toDynamicHomepageModule(item))),
+    getHomepageSourceModules(tenantHomepageModulesData.value),
     {
       categories: tenantLandingCategories.value,
       products: tenantLandingProducts.value,

@@ -10,6 +10,18 @@ export type HomepageCatalogContext = {
   products: LandingProductCard[]
 }
 
+export function collectHomepageProductCategoryIds(modules: HomepageDynamicModule[]) {
+  const ids = new Set<string>()
+  for (const module of modules) {
+    if (!module.isEnabled || module.component !== 'product_slider1') continue
+    const props = ensureDynamicModuleProps(module as HomepageDynamicModule<'product_slider1'>)
+    if (props.source.type === 'category' && props.source.categoryId) {
+      ids.add(props.source.categoryId)
+    }
+  }
+  return [...ids]
+}
+
 function sortProducts(items: LandingProductCard[], sort: 'newest' | 'price_asc' | 'price_desc') {
   const toPrice = (value: string) => Number(value.replace(/[^\d.]/g, '')) || 0
   if (sort === 'price_asc') return [...items].sort((a, b) => toPrice(a.priceLabel) - toPrice(b.priceLabel))

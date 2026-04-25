@@ -11,7 +11,7 @@ import {
   toDynamicHomepageModules,
   updateModuleConfigFromJson,
 } from './homepageEditor'
-import { resolveProductSliderProducts } from './homepageModuleResolvers'
+import { collectHomepageProductCategoryIds, resolveProductSliderProducts } from './homepageModuleResolvers'
 
 function createModule<T extends HomepageModule['moduleType']>(
   moduleType: T,
@@ -58,6 +58,66 @@ describe('moveHomepageModule', () => {
 
     expect(moved.map((item) => item.moduleType)).toEqual(['nav', 'footer'])
     expect(moved.map((item) => item.sortOrder)).toEqual([0, 1])
+  })
+})
+
+describe('collectHomepageProductCategoryIds', () => {
+  test('只收集啟用中 category source 的 product_slider1 分類', () => {
+    const ids = collectHomepageProductCategoryIds([
+      {
+        uid: 'nav',
+        component: 'nav1',
+        sortOrder: 0,
+        isEnabled: true,
+        props: { show: true },
+      },
+      {
+        uid: 'featured',
+        component: 'product_slider1',
+        sortOrder: 1,
+        isEnabled: true,
+        props: {
+          title: '精選',
+          source: { type: 'category', categoryId: 'cat-1', limit: 4, sort: 'newest' },
+          ui: { perView: 4, autoplay: false, intervalMs: 4000, loop: false },
+        },
+      },
+      {
+        uid: 'manual',
+        component: 'product_slider1',
+        sortOrder: 2,
+        isEnabled: true,
+        props: {
+          title: '手選',
+          source: { type: 'manual', productIds: ['p1'], sort: 'manual' },
+          ui: { perView: 4, autoplay: false, intervalMs: 4000, loop: false },
+        },
+      },
+      {
+        uid: 'disabled',
+        component: 'product_slider1',
+        sortOrder: 3,
+        isEnabled: false,
+        props: {
+          title: '停用',
+          source: { type: 'category', categoryId: 'cat-2', limit: 4, sort: 'newest' },
+          ui: { perView: 4, autoplay: false, intervalMs: 4000, loop: false },
+        },
+      },
+      {
+        uid: 'duplicate',
+        component: 'product_slider1',
+        sortOrder: 4,
+        isEnabled: true,
+        props: {
+          title: '重複',
+          source: { type: 'category', categoryId: 'cat-1', limit: 8, sort: 'newest' },
+          ui: { perView: 4, autoplay: false, intervalMs: 4000, loop: false },
+        },
+      },
+    ])
+
+    expect(ids).toEqual(['cat-1'])
   })
 })
 
