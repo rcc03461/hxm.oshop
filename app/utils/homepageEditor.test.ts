@@ -1,12 +1,13 @@
 // @ts-ignore Bun test types are not configured in this repository yet.
 import { describe, expect, test } from 'bun:test'
-import type { HomepageModule } from '../types/homepage'
+import type { HomepageDynamicModule, HomepageModule } from '../types/homepage'
 import {
   addCategoryToModule,
   addProductToModule,
   ensureDynamicModuleProps,
   ensureModuleConfig,
   moveHomepageModule,
+  removeDynamicHomepageModule,
   toDynamicHomepageModule,
   toDynamicHomepageModules,
   updateModuleConfigFromJson,
@@ -236,6 +237,67 @@ describe('updateModuleConfigFromJson', () => {
 })
 
 describe('dynamic module conversion', () => {
+  test('刪除 dynamic module 後會重排 sortOrder', () => {
+    const modules: HomepageDynamicModule[] = [
+      {
+        uid: 'a',
+        component: 'nav1' as const,
+        sortOrder: 0,
+        isEnabled: true,
+        props: { show: true },
+      },
+      {
+        uid: 'b',
+        component: 'hero3' as const,
+        sortOrder: 1,
+        isEnabled: true,
+        props: {
+          hero: {
+            badge: '',
+            title: '',
+            subtitle: '',
+            primaryCta: { label: '', to: '/' },
+            secondaryCta: { label: '', to: '/' },
+          },
+        },
+      },
+      {
+        uid: 'c',
+        component: 'footer1' as const,
+        sortOrder: 2,
+        isEnabled: true,
+        props: { text: '' },
+      },
+    ]
+
+    const next = removeDynamicHomepageModule(modules, 1)
+    expect(next.map((item) => item.uid)).toEqual(['a', 'c'])
+    expect(next.map((item) => item.sortOrder)).toEqual([0, 1])
+  })
+
+  test('刪除索引超出範圍時只會正規化 sortOrder', () => {
+    const modules: HomepageDynamicModule[] = [
+      {
+        uid: 'a',
+        component: 'nav1' as const,
+        sortOrder: 5,
+        isEnabled: true,
+        props: { show: true },
+      },
+      {
+        uid: 'c',
+        component: 'footer1' as const,
+        sortOrder: 9,
+        isEnabled: true,
+        props: { text: '' },
+      },
+    ]
+
+    const next = removeDynamicHomepageModule(modules, 99)
+    expect(next.map((item) => item.uid)).toEqual(['a', 'c'])
+    expect(next.map((item) => item.sortOrder)).toEqual([0, 1])
+  })
+
   test('image_slider module 會轉成 image_slider1 並保留 slides', () => {
     const legacySlider = createModule('image_slider' as HomepageModule['moduleType'], {
       title: '首頁輪播',

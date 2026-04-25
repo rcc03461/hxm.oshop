@@ -5,6 +5,7 @@ const tenantSlug = useState<string | null>('oshop-tenant-slug')
 const { totalQty } = useStoreCart()
 const { openCartDrawer } = useCartDrawer()
 const requestFetch = useRequestFetch()
+const route = useRoute()
 
 type StoreNavItem = {
   id: string
@@ -62,6 +63,15 @@ const showTopNav = computed(() => {
     ((navModule.config as { show?: boolean } | undefined)?.show ??
       (navModule.props as { show?: boolean } | undefined)?.show)
   return configShow !== false
+})
+
+const shouldShowDefaultFooter = computed(() => {
+  // 租戶首頁若已啟用 footer1 模組，避免和 layout 內建 footer 重覆。
+  if (!tenantSlug.value || route.path !== '/') return true
+  const footerModule = (storeHomepageModules.value ?? []).find(
+    (item) => item.moduleType === 'footer' || item.component === 'footer1',
+  )
+  return !footerModule?.isEnabled
 })
 
 const { data: tenantInfo } = await useAsyncData(
@@ -230,7 +240,7 @@ async function handleCustomerLogout() {
 
     <StoreCartDrawer />
 
-    <footer class="border-t border-neutral-200">
+    <footer v-if="shouldShowDefaultFooter" class="border-t border-neutral-200">
       <div
         class="mx-auto max-w-5xl px-4 py-8 text-center text-xs text-neutral-500 sm:px-6"
       >

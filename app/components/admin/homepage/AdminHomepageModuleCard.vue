@@ -27,6 +27,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   move: [delta: number]
+  remove: []
   updateJson: [value: string]
   addCategory: [module: HomepageDynamicModule<'category_grid1'> | HomepageDynamicModule<'product_slider1'>]
   removeCategory: [module: HomepageDynamicModule<'category_grid1'> | HomepageDynamicModule<'product_slider1'>, index: number]
@@ -70,7 +71,7 @@ const footerConfig = computed<HomepageFooterModuleConfig | null>(() =>
 </script>
 
 <template>
-  <article class="rounded-lg border border-neutral-200 p-4">
+  <article class="rounded-lg border border-neutral-200 p-4 hover:shadow-2xl transition-shadow duration-300 hover:border-gray-300">
     <div class="flex items-center gap-3">
       <div>
         <p class="text-sm font-semibold text-neutral-900">{{ module.component }}</p>
@@ -95,6 +96,14 @@ const footerConfig = computed<HomepageFooterModuleConfig | null>(() =>
         @click="emit('move', 1)"
       >
         下移
+      </button>
+      <button
+        type="button"
+        class="rounded border border-red-300 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
+        :disabled="disabled"
+        @click="emit('remove')"
+      >
+        刪除
       </button>
     </div>
 

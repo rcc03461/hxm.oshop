@@ -18,6 +18,7 @@ const {
   saveError,
   jsonErrors,
   moveItem,
+  removeItem,
   updateJson,
   addCategory,
   removeCategory,
@@ -114,6 +115,7 @@ const moduleOptions: Array<{ value: HomepageModuleComponentKey; label: string }>
             :available-categories="availableCategories"
             :available-products="availableProducts"
             @move="(delta) => moveItem(index, delta)"
+            @remove="removeItem(index)"
             @update-json="(value) => updateJson(module, value)"
             @add-category="addCategory"
             @remove-category="removeCategory"

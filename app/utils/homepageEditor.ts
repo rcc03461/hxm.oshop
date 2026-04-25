@@ -408,6 +408,16 @@ export function moveDynamicHomepageModule(items: HomepageDynamicModule[], index:
   return normalizeDynamicHomepageModuleOrder(copied)
 }
 
+export function removeDynamicHomepageModule(items: HomepageDynamicModule[], index: number) {
+  if (index < 0 || index >= items.length) {
+    return normalizeDynamicHomepageModuleOrder(items)
+  }
+
+  const copied = [...items]
+  copied.splice(index, 1)
+  return normalizeDynamicHomepageModuleOrder(copied)
+}
+
 export function addCategoryToDynamicModule(
   module: HomepageDynamicModule<'category_grid1'> | HomepageDynamicModule<'product_slider1'>,
   createId: IdFactory = createHomepageEditorId,

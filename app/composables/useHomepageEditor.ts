@@ -4,6 +4,7 @@ import {
   addCategoryToDynamicModule,
   addProductToDynamicModule,
   moveDynamicHomepageModule,
+  removeDynamicHomepageModule,
   normalizeDynamicHomepageModuleOrder,
   orderHomepageModulesBySortOrder,
   removeCategoryFromDynamicModule,
@@ -95,6 +96,10 @@ export function useHomepageEditor() {
 
   function moveItem(index: number, delta: number) {
     draftDynamicItems.value = moveDynamicHomepageModule(draftDynamicItems.value, index, delta)
+  }
+
+  function removeItem(index: number) {
+    draftDynamicItems.value = removeDynamicHomepageModule(draftDynamicItems.value, index)
   }
 
   function updateJson(module: HomepageDynamicModule, value: string) {
@@ -305,6 +310,7 @@ export function useHomepageEditor() {
     saveError,
     jsonErrors,
     moveItem,
+    removeItem,
     updateJson,
     addCategory,
     removeCategory,
