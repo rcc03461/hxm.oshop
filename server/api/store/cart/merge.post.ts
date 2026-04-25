@@ -8,6 +8,6 @@ export default defineEventHandler(async (event) => {
 
   await mergeSessionCartIntoCustomerCart(event, ctx.tenantId, ctx.customerId)
   const refreshed = await resolveStoreCartContext(event)
-  const lines = await getStoreCartLines(event, refreshed.cartId)
+  const lines = await getStoreCartLines(event, refreshed.tenantId, refreshed.cartId)
   return { ok: true as const, lines }
 })

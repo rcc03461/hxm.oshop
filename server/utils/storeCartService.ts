@@ -102,7 +102,7 @@ export async function resolveStoreCartContext(event: H3Event): Promise<{
   return { tenantId: tenant.tenantId, shopSlug: tenant.shopSlug, customerId, cartId }
 }
 
-export async function getStoreCartLines(event: H3Event, cartId: string) {
+export async function getStoreCartLines(event: H3Event, tenantId: string, cartId: string) {
   const db = getDb(event)
   const rows = await db
     .select({

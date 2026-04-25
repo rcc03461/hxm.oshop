@@ -70,6 +70,6 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const lines = await getStoreCartLines(event, ctx.cartId)
+  const lines = await getStoreCartLines(event, ctx.tenantId, ctx.cartId)
   return { ok: true as const, lines }
 })

@@ -46,6 +46,6 @@ export default defineEventHandler(async (event) => {
     })
     .where(eq(schema.shopCartLines.id, itemId))
 
-  const lines = await getStoreCartLines(event, ctx.cartId)
+  const lines = await getStoreCartLines(event, ctx.tenantId, ctx.cartId)
   return { ok: true as const, lines }
 })
