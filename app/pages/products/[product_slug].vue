@@ -150,6 +150,7 @@ const showOriginalPrice = computed(() => {
 
 const { addLine } = useStoreCart()
 const cartHint = ref('')
+const heroImageEl = ref<HTMLImageElement | null>(null)
 
 function optionSummaryText() {
   const d = data.value
@@ -164,7 +165,75 @@ function optionSummaryText() {
     .join('、')
 }
 
-async function handleAddToCart() {
+async function animateFlyToCart(originEl?: HTMLElement | null) {
+  if (!import.meta.client) return
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  const targetEl = document.querySelector<HTMLElement>('[data-cart-trigger="true"]')
+  const sourceEl = heroImageEl.value ?? originEl
+  if (!targetEl || !sourceEl) return
+
+  const sourceRect = sourceEl.getBoundingClientRect()
+  const targetRect = targetEl.getBoundingClientRect()
+  const startX = sourceRect.left + sourceRect.width / 2
+  const startY = sourceRect.top + sourceRect.height / 2
+  const endX = targetRect.left + targetRect.width / 2
+  const endY = targetRect.top + targetRect.height / 2
+  const deltaX = endX - startX
+  const deltaY = endY - startY
+  const arcHeight = Math.min(200, Math.max(80, Math.abs(deltaX) * 0.25))
+
+  const ghost = sourceEl.cloneNode(true) as HTMLElement
+  ghost.style.position = 'fixed'
+  ghost.style.left = `${sourceRect.left}px`
+  ghost.style.top = `${sourceRect.top}px`
+  ghost.style.width = `${sourceRect.width}px`
+  ghost.style.height = `${sourceRect.height}px`
+  ghost.style.pointerEvents = 'none'
+  ghost.style.zIndex = '80'
+  ghost.style.borderRadius = '12px'
+  ghost.style.overflow = 'hidden'
+  ghost.style.willChange = 'transform, opacity'
+  document.body.appendChild(ghost)
+
+  const move = ghost.animate(
+    [
+      { transform: 'translate(0px, 0px) scale(1)', opacity: 0.95, offset: 0 },
+      {
+        transform: `translate(${deltaX * 0.55}px, ${deltaY * 0.55 - arcHeight}px) scale(0.72)`,
+        opacity: 0.85,
+        offset: 0.55,
+      },
+      {
+        transform: `translate(${deltaX}px, ${deltaY}px) scale(0.28)`,
+        opacity: 0.25,
+        offset: 1,
+      },
+    ],
+    {
+      duration: 700,
+      easing: 'cubic-bezier(0.2, 0.75, 0.3, 1)',
+      fill: 'forwards',
+    },
+  )
+
+  const pulse = targetEl.animate(
+    [
+      { transform: 'scale(1)' },
+      { transform: 'scale(1.12)' },
+      { transform: 'scale(1)' },
+    ],
+    {
+      duration: 320,
+      delay: 420,
+      easing: 'ease-out',
+    },
+  )
+
+  await Promise.allSettled([move.finished, pulse.finished])
+  ghost.remove()
+}
+
+async function handleAddToCart(event: MouseEvent) {
   cartHint.value = ''
   const d = data.value
   if (!d) return
@@ -177,6 +246,7 @@ async function handleAddToCart() {
     return
   }
   const price = displayPrice.value ?? d.product.basePrice
+  const flyPromise = animateFlyToCart((event.currentTarget as HTMLElement) ?? null)
   await addLine({
     productId: d.product.id,
     productSlug: d.product.slug,
@@ -185,6 +255,7 @@ async function handleAddToCart() {
     unitPrice: price,
     optionSummary: optionSummaryText(),
   })
+  await flyPromise
   cartHint.value = '已加入購物車'
 }
 </script>
@@ -217,6 +288,7 @@ async function handleAddToCart() {
           <div class="aspect-square">
             <img
               v-if="heroImage"
+              ref="heroImageEl"
               :src="heroImage"
               :alt="data.product.title"
               class="h-full w-full object-contain"

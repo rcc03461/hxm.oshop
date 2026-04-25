@@ -44,13 +44,14 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="isOpen"
-      class="fixed inset-0 z-50"
-      aria-label="購物車抽屜"
-      role="dialog"
-      aria-modal="true"
-    >
+    <Transition name="drawer-fade">
+      <div
+        v-if="isOpen"
+        class="fixed inset-0 z-50"
+        aria-label="購物車抽屜"
+        role="dialog"
+        aria-modal="true"
+      >
       <button
         type="button"
         class="absolute inset-0 bg-black/35"
@@ -58,7 +59,7 @@ onBeforeUnmount(() => {
         @click="closeCartDrawer"
       />
       <aside
-        class="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl"
+        class="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl drawer-panel"
       >
         <header class="flex items-center justify-between border-b border-neutral-200 px-4 py-3">
           <h2 class="text-base font-semibold text-neutral-900">
@@ -179,6 +180,29 @@ onBeforeUnmount(() => {
           </div>
         </footer>
       </aside>
-    </div>
+      </div>
+    </Transition>
   </Teleport>
 </template>
+
+<style scoped>
+.drawer-fade-enter-active,
+.drawer-fade-leave-active {
+  transition: opacity 220ms ease;
+}
+
+.drawer-fade-enter-from,
+.drawer-fade-leave-to {
+  opacity: 0;
+}
+
+.drawer-fade-enter-active .drawer-panel,
+.drawer-fade-leave-active .drawer-panel {
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.drawer-fade-enter-from .drawer-panel,
+.drawer-fade-leave-to .drawer-panel {
+  transform: translateX(100%);
+}
+</style>
