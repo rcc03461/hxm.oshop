@@ -14,15 +14,23 @@ type Row = {
   updatedAt: string
 }
 
+type CategoryStatus = 'active' | 'hidden'
+const CATEGORY_STATUS_OPTIONS: Array<{ value: CategoryStatus; label: string }> = [
+  { value: 'active', label: '啟用' },
+  { value: 'hidden', label: '停用' },
+]
+
 const q = ref('')
 const page = ref(1)
 const pageSize = ref(20)
+const status = ref<CategoryStatus[]>([])
+const updatingStatusId = ref<string | null>(null)
 
 const requestFetch = useRequestFetch()
 
 const { data, pending, refresh, error } = await useAsyncData(
   () =>
-    `admin-categories-${page.value}-${pageSize.value}-${q.value.trim() || '-'}`,
+    `admin-categories-${page.value}-${pageSize.value}-${status.value.join(',') || 'all'}-${q.value.trim() || '-'}`,
   async () => {
     return await requestFetch<{
       items: Row[]
@@ -34,6 +42,7 @@ const { data, pending, refresh, error } = await useAsyncData(
       query: {
         page: page.value,
         pageSize: pageSize.value,
+        ...(status.value.length > 0 ? { status: status.value.join(',') } : {}),
         ...(q.value.trim() ? { q: q.value.trim() } : {}),
       },
     })
@@ -56,6 +65,30 @@ function onSearchInput() {
     page.value = 1
     void refresh()
   }, 300)
+}
+
+function onFilterChange() {
+  page.value = 1
+  void refresh()
+}
+
+async function toggleStatus(row: Row, enabled: boolean) {
+  const nextStatus: CategoryStatus = enabled ? 'active' : 'hidden'
+  if (row.status === nextStatus || updatingStatusId.value === row.id) return
+
+  updatingStatusId.value = row.id
+  try {
+    await requestFetch(`/api/admin/categories/${row.id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      body: { status: nextStatus },
+    })
+    row.status = nextStatus
+  } catch (e) {
+    console.error('[admin/categories] toggle status failed', e)
+  } finally {
+    updatingStatusId.value = null
+  }
 }
 </script>
 
@@ -83,6 +116,16 @@ function onSearchInput() {
         placeholder="搜尋名稱或網址代號…"
         class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm shadow-sm"
         @input="onSearchInput"
+      />
+    </div>
+
+    <div class="mt-4">
+      <AdminFilterRow
+        v-model="status"
+        label="狀態"
+        :options="CATEGORY_STATUS_OPTIONS"
+        :disabled="pending"
+        @change="onFilterChange"
       />
     </div>
 
@@ -134,8 +177,14 @@ function onSearchInput() {
             <td class="px-4 py-3 text-neutral-700">
               {{ row.sortOrder }}
             </td>
-            <td class="px-4 py-3 text-neutral-700">
-              {{ row.status === 'hidden' ? '隱藏' : '顯示' }}
+            <td class="whitespace-nowrap px-4 py-3">
+              <div class="flex items-center gap-3">
+                <AdminStatusSwitch
+                  :model-value="row.status === 'active'"
+                  :disabled="updatingStatusId === row.id"
+                  @update:model-value="(value) => void toggleStatus(row, value)"
+                />
+              </div>
             </td>
             <td class="px-4 py-3 text-xs text-neutral-600">
               {{ formatTime(row.updatedAt) }}

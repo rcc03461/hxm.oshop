@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import AdminMenuEditDrawer from '~/components/admin/navigation/AdminMenuEditDrawer.vue'
-import AdminMenuTree from '~/components/admin/navigation/AdminMenuTree.vue'
 import AdminMenuHeTree from '~/components/admin/navigation/AdminMenuHeTree.vue'
 import type { AdminMenuNode } from '~/components/admin/navigation/AdminMenuTreeItem.vue'
-
-const useHeTree = ref(true)
 
 definePageMeta({
   layout: 'admin',
@@ -234,25 +231,6 @@ async function removeItem(item: AdminMenuNode) {
       >
         重新載入
       </button>
-      <div class="ml-auto flex items-center gap-2">
-        <span class="text-sm text-neutral-500">拖曳組件：</span>
-        <button
-          type="button"
-          class="rounded-md border px-3 py-2 text-sm font-medium transition-colors"
-          :class="useHeTree ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50'"
-          @click="useHeTree = true"
-        >
-          he-tree
-        </button>
-        <button
-          type="button"
-          class="rounded-md border px-3 py-2 text-sm font-medium transition-colors"
-          :class="!useHeTree ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50'"
-          @click="useHeTree = false"
-        >
-          vuedraggable
-        </button>
-      </div>
     </div>
 
     <p v-if="errorMsg" class="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -266,18 +244,6 @@ async function removeItem(item: AdminMenuNode) {
       </p>
       <template v-else>
         <AdminMenuHeTree
-          v-if="useHeTree"
-          v-model:items="tree"
-          :busy="saving || loading"
-          @changed="persistOrder"
-          @toggle-visible="toggleVisible"
-          @edit="openDrawer"
-          @remove="removeItem"
-          @rename="renameItem"
-          @add-child="(item) => createMenu(item.id)"
-        />
-        <AdminMenuTree
-          v-else
           v-model:items="tree"
           :busy="saving || loading"
           @changed="persistOrder"

@@ -13,17 +13,23 @@ type Row = {
   updatedAt: string
 }
 
+type CustomerStatus = 'active' | 'disabled'
+const CUSTOMER_STATUS_OPTIONS: Array<{ value: CustomerStatus; label: string }> = [
+  { value: 'active', label: '啟用' },
+  { value: 'disabled', label: '停用' },
+]
+
 const q = ref('')
 const page = ref(1)
 const pageSize = ref(20)
-/** all | active | disabled */
-const status = ref<string>('all')
+const status = ref<CustomerStatus[]>([])
+const updatingStatusId = ref<string | null>(null)
 
 const requestFetch = useRequestFetch()
 
 const { data, pending, refresh, error } = await useAsyncData(
   () =>
-    `admin-customers-${page.value}-${pageSize.value}-${status.value}-${q.value.trim() || '-'}`,
+    `admin-customers-${page.value}-${pageSize.value}-${status.value.join(',') || 'all'}-${q.value.trim() || '-'}`,
   async () => {
     return await requestFetch<{
       items: Row[]
@@ -35,7 +41,7 @@ const { data, pending, refresh, error } = await useAsyncData(
       query: {
         page: page.value,
         pageSize: pageSize.value,
-        status: status.value,
+        ...(status.value.length > 0 ? { status: status.value.join(',') } : {}),
         ...(q.value.trim() ? { q: q.value.trim() } : {}),
       },
     })
@@ -51,18 +57,6 @@ function formatTime(iso: string) {
   }
 }
 
-function statusLabel(s: string) {
-  if (s === 'active') return '啟用'
-  if (s === 'disabled') return '停用'
-  return s
-}
-
-function statusClass(s: string) {
-  if (s === 'active') return 'text-emerald-700'
-  if (s === 'disabled') return 'text-red-700'
-  return 'text-neutral-700'
-}
-
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 function onSearchInput() {
   if (searchTimer) clearTimeout(searchTimer)
@@ -75,6 +69,25 @@ function onSearchInput() {
 function onStatusChange() {
   page.value = 1
   void refresh()
+}
+
+async function toggleStatus(row: Row, enabled: boolean) {
+  const nextStatus: CustomerStatus = enabled ? 'active' : 'disabled'
+  if (row.status === nextStatus || updatingStatusId.value === row.id) return
+
+  updatingStatusId.value = row.id
+  try {
+    await requestFetch(`/api/admin/customers/${row.id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      body: { status: nextStatus },
+    })
+    row.status = nextStatus
+  } catch (e) {
+    console.error('[admin/customers] toggle status failed', e)
+  } finally {
+    updatingStatusId.value = null
+  }
 }
 </script>
 
@@ -89,7 +102,7 @@ function onStatusChange() {
       </div>
     </div>
 
-    <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div class="mt-4 flex max-w-md gap-2">
       <div class="flex max-w-md flex-1 gap-2">
         <input
           v-model="q"
@@ -99,18 +112,16 @@ function onStatusChange() {
           @input="onSearchInput"
         />
       </div>
-      <div class="flex items-center gap-2">
-        <label class="text-xs font-medium text-neutral-500">狀態</label>
-        <select
-          v-model="status"
-          class="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm"
-          @change="onStatusChange"
-        >
-          <option value="all">全部</option>
-          <option value="active">啟用</option>
-          <option value="disabled">停用</option>
-        </select>
-      </div>
+    </div>
+
+    <div class="mt-4">
+      <AdminFilterRow
+        v-model="status"
+        label="狀態"
+        :options="CUSTOMER_STATUS_OPTIONS"
+        :disabled="pending"
+        @change="onStatusChange"
+      />
     </div>
 
     <p v-if="error" class="mt-4 text-sm text-red-600">
@@ -125,22 +136,23 @@ function onStatusChange() {
         <table class="min-w-full divide-y divide-neutral-200 text-sm">
           <thead class="bg-neutral-50 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
             <tr>
-              <th class="whitespace-nowrap px-4 py-3">建立時間</th>
               <th class="whitespace-nowrap px-4 py-3">Email</th>
               <th class="whitespace-nowrap px-4 py-3">姓名</th>
               <th class="whitespace-nowrap px-4 py-3">電話</th>
               <th class="whitespace-nowrap px-4 py-3">狀態</th>
+              <th class="whitespace-nowrap px-4 py-3">更新</th>
+              <th class="whitespace-nowrap px-4 py-3">建立時間</th>
               <th class="whitespace-nowrap px-4 py-3" />
             </tr>
           </thead>
           <tbody class="divide-y divide-neutral-200">
             <tr v-if="pending">
-              <td colspan="6" class="px-4 py-6 text-center text-neutral-500">
+              <td colspan="7" class="px-4 py-6 text-center text-neutral-500">
                 載入中…
               </td>
             </tr>
             <tr v-else-if="!data?.items.length">
-              <td colspan="6" class="px-4 py-6 text-center text-neutral-500">
+              <td colspan="7" class="px-4 py-6 text-center text-neutral-500">
                 尚無顧客
               </td>
             </tr>
@@ -149,9 +161,6 @@ function onStatusChange() {
               :key="row.id"
               class="hover:bg-neutral-50"
             >
-              <td class="whitespace-nowrap px-4 py-3 text-xs text-neutral-600">
-                {{ formatTime(row.createdAt) }}
-              </td>
               <td class="max-w-[16rem] truncate px-4 py-3 text-neutral-900">
                 {{ row.email }}
               </td>
@@ -162,9 +171,19 @@ function onStatusChange() {
                 {{ row.phone || '—' }}
               </td>
               <td class="whitespace-nowrap px-4 py-3">
-                <span :class="['text-sm font-medium', statusClass(row.status)]">
-                  {{ statusLabel(row.status) }}
-                </span>
+                <div class="flex items-center gap-3">
+                  <AdminStatusSwitch
+                    :model-value="row.status === 'active'"
+                    :disabled="updatingStatusId === row.id"
+                    @update:model-value="(value) => void toggleStatus(row, value)"
+                  />
+                </div>
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 text-xs text-neutral-600">
+                {{ formatTime(row.updatedAt) }}
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 text-xs text-neutral-600">
+                {{ formatTime(row.createdAt) }}
               </td>
               <td class="whitespace-nowrap px-4 py-3 text-right">
                 <NuxtLink

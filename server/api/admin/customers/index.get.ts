@@ -5,6 +5,25 @@ import { requireTenantSession } from '../../../utils/requireTenantSession'
 
 const DEFAULT_PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
+const CUSTOMER_STATUSES = ['active', 'disabled'] as const
+type CustomerStatus = (typeof CUSTOMER_STATUSES)[number]
+
+function parseCustomerStatuses(raw: unknown): CustomerStatus[] {
+  const values = Array.isArray(raw)
+    ? raw.flatMap((item) => String(item).split(','))
+    : typeof raw === 'string'
+      ? raw.split(',')
+      : []
+  return Array.from(
+    new Set(
+      values
+        .map((item) => item.trim())
+        .filter((item): item is CustomerStatus =>
+          (CUSTOMER_STATUSES as readonly string[]).includes(item),
+        ),
+    ),
+  )
+}
 
 function searchCondition(search: string): SQL | undefined {
   if (!search) return undefined
@@ -25,14 +44,16 @@ export default defineEventHandler(async (event) => {
   )
   const search =
     typeof q.q === 'string' && q.q.trim().length > 0 ? q.q.trim() : ''
-  const statusRaw = typeof q.status === 'string' ? q.status.trim() : 'all'
+  const selectedStatuses = parseCustomerStatuses(q.status)
 
   const db = getDb(event)
   const parts: SQL[] = [eq(schema.customers.tenantId, session.tenantId)]
   const sc = searchCondition(search)
   if (sc) parts.push(sc)
-  if (statusRaw === 'active' || statusRaw === 'disabled') {
-    parts.push(eq(schema.customers.status, statusRaw))
+  if (selectedStatuses.length === 1) {
+    parts.push(eq(schema.customers.status, selectedStatuses[0]))
+  } else if (selectedStatuses.length > 1) {
+    parts.push(or(...selectedStatuses.map((s) => eq(schema.customers.status, s)))!)
   }
   const whereClause = parts.length === 1 ? parts[0]! : and(...parts)!
 

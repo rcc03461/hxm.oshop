@@ -24,8 +24,8 @@ type Category = {
 type ProductStatus = 'active' | 'inactive'
 
 const PRODUCT_STATUS_OPTIONS: Array<{ value: ProductStatus; label: string }> = [
-  { value: 'active', label: '上線' },
-  { value: 'inactive', label: '下線' },
+  { value: 'active', label: '啟用' },
+  { value: 'inactive', label: '停用' },
 ]
 
 const q = ref('')
@@ -33,6 +33,7 @@ const page = ref(1)
 const pageSize = ref(20)
 const status = ref<ProductStatus[]>([])
 const categoryIds = ref<string[]>([])
+const updatingStatusId = ref<string | null>(null)
 
 /** SSR 時須沿用當前請求的 Cookie/Host，否則內部 /api/admin/* 會拿不到登入態或租戶 Host。 */
 const requestFetch = useRequestFetch()
@@ -113,18 +114,6 @@ function formatTime(iso: string) {
   }
 }
 
-function statusLabel(s: string) {
-  if (s === 'active') return '上線'
-  if (s === 'inactive') return '下線'
-  return s
-}
-
-function statusClass(s: string) {
-  if (s === 'active') return 'text-emerald-700'
-  if (s === 'inactive') return 'text-neutral-500'
-  return 'text-neutral-700'
-}
-
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 function onSearchInput() {
   if (searchTimer) clearTimeout(searchTimer)
@@ -137,6 +126,25 @@ function onSearchInput() {
 function onFilterChange() {
   page.value = 1
   void refresh()
+}
+
+async function toggleStatus(row: Row, enabled: boolean) {
+  const nextStatus: ProductStatus = enabled ? 'active' : 'inactive'
+  if (row.status === nextStatus || updatingStatusId.value === row.id) return
+
+  updatingStatusId.value = row.id
+  try {
+    await requestFetch(`/api/admin/products/${row.id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      body: { status: nextStatus },
+    })
+    row.status = nextStatus
+  } catch (e) {
+    console.error('[admin/products] toggle status failed', e)
+  } finally {
+    updatingStatusId.value = null
+  }
 }
 
 const statusFilterOptions = computed(() =>
@@ -211,12 +219,12 @@ const categoryFilterOptions = computed(() =>
         <thead class="bg-neutral-50 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
           <tr>
             <th class="px-4 py-3">名稱</th>
-            <th class="px-4 py-3">狀態</th>
             <th class="px-4 py-3">Slug</th>
             <th class="px-4 py-3">SKU 數</th>
             <th class="px-4 py-3">分類</th>
             <th class="px-4 py-3">基準價</th>
             <th class="px-4 py-3">原價</th>
+            <th class="px-4 py-3">狀態</th>
             <th class="px-4 py-3">更新</th>
             <th class="px-4 py-3" />
           </tr>
@@ -240,11 +248,6 @@ const categoryFilterOptions = computed(() =>
             <td class="px-4 py-3 font-medium text-neutral-900">
               {{ row.title }}
             </td>
-            <td class="whitespace-nowrap px-4 py-3">
-              <span :class="['text-sm font-medium', statusClass(row.status)]">
-                {{ statusLabel(row.status) }}
-              </span>
-            </td>
             <td class="px-4 py-3 font-mono text-xs text-neutral-700">
               {{ row.slug }}
             </td>
@@ -262,6 +265,15 @@ const categoryFilterOptions = computed(() =>
             </td>
             <td class="px-4 py-3 text-neutral-700">
               {{ row.originalPrice || '—' }}
+            </td>
+            <td class="whitespace-nowrap px-4 py-3">
+              <div class="flex items-center gap-3">
+                <AdminStatusSwitch
+                  :model-value="row.status === 'active'"
+                  :disabled="updatingStatusId === row.id"
+                  @update:model-value="(value) => void toggleStatus(row, value)"
+                />
+              </div>
             </td>
             <td class="px-4 py-3 text-xs text-neutral-600">
               {{ formatTime(row.updatedAt) }}
