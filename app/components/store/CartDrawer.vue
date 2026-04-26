@@ -85,26 +85,41 @@ onBeforeUnmount(() => {
               :key="`${line.productId}:${line.variantId ?? ''}`"
               class="py-4"
             >
-              <div class="min-w-0">
+              <div class="flex gap-3">
                 <NuxtLink
                   :to="`/products/${line.productSlug}`"
-                  class="text-sm font-semibold text-neutral-900 hover:underline"
+                  class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-neutral-200 bg-neutral-50"
                   @click="closeCartDrawer"
                 >
-                  {{ line.title }}
+                  <img
+                    v-if="line.imageUrl"
+                    :src="line.imageUrl"
+                    :alt="line.title"
+                    class="h-full w-full object-cover"
+                  >
+                  <span v-else class="text-xs text-neutral-400">無圖片</span>
                 </NuxtLink>
-                <p v-if="line.optionSummary" class="mt-1 text-xs text-neutral-500">
-                  {{ line.optionSummary }}
-                </p>
-                <p class="mt-1 font-mono text-xs text-neutral-500">
-                  {{ formatHkd(line.unitPrice) }} × {{ line.qty }}
-                </p>
-                <p
-                  v-if="line.isValid === false && line.validationMessage"
-                  class="mt-2 text-xs text-red-600"
-                >
-                  {{ line.validationMessage }}
-                </p>
+                <div class="min-w-0">
+                  <NuxtLink
+                    :to="`/products/${line.productSlug}`"
+                    class="text-sm font-semibold text-neutral-900 hover:underline"
+                    @click="closeCartDrawer"
+                  >
+                    {{ line.title }}
+                  </NuxtLink>
+                  <p v-if="line.optionSummary" class="mt-1 text-xs text-neutral-500">
+                    {{ line.optionSummary }}
+                  </p>
+                  <p class="mt-1 font-mono text-xs text-neutral-500">
+                    {{ formatHkd(line.unitPrice) }} × {{ line.qty }}
+                  </p>
+                  <p
+                    v-if="line.isValid === false && line.validationMessage"
+                    class="mt-2 text-xs text-red-600"
+                  >
+                    {{ line.validationMessage }}
+                  </p>
+                </div>
               </div>
               <div class="mt-3 flex items-center justify-between gap-3">
                 <label class="flex items-center gap-2 text-sm text-neutral-600">

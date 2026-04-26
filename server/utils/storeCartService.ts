@@ -14,6 +14,7 @@ export type StoreCartLineDto = {
   productSlug: string
   variantId: string | null
   title: string
+  imageUrl: string | null
   unitPrice: string
   qty: number
   optionSummary?: string
@@ -25,6 +26,13 @@ function normalizeMoney(v: string | number | null | undefined): string {
   const n = Number(v ?? 0)
   if (!Number.isFinite(n)) return '0.0000'
   return n.toFixed(4)
+}
+
+export function resolveCartLineImageUrl(
+  coverUrl: string | null | undefined,
+  variantImageUrl: string | null | undefined,
+): string | null {
+  return variantImageUrl || coverUrl || null
 }
 
 async function resolveStoreCustomerSession(
@@ -127,6 +135,7 @@ export async function getStoreCartLines(event: H3Event, tenantId: string, cartId
             slug: schema.products.slug,
             title: schema.products.title,
             basePrice: schema.products.basePrice,
+            coverAttachmentId: schema.products.coverAttachmentId,
           })
           .from(schema.products)
           .where(
@@ -139,6 +148,33 @@ export async function getStoreCartLines(event: H3Event, tenantId: string, cartId
       : []
   const productMap = new Map(products.map((p) => [p.id, p]))
 
+  const coverIds = [
+    ...new Set(
+      products
+        .map((p) => p.coverAttachmentId)
+        .filter((x): x is string => typeof x === 'string' && x.length > 0),
+    ),
+  ]
+  const coverUrlById = new Map<string, string | null>()
+  if (coverIds.length > 0) {
+    const covers = await db
+      .select({
+        id: schema.attachments.id,
+        publicUrl: schema.attachments.publicUrl,
+      })
+      .from(schema.attachments)
+      .where(
+        and(
+          eq(schema.attachments.tenantId, tenantId),
+          inArray(schema.attachments.id, coverIds),
+          isNull(schema.attachments.deletedAt),
+        ),
+      )
+    for (const c of covers) {
+      coverUrlById.set(c.id, c.publicUrl)
+    }
+  }
+
   const variants =
     productIds.length > 0
       ? await db
@@ -148,6 +184,7 @@ export async function getStoreCartLines(event: H3Event, tenantId: string, cartId
             skuCode: schema.productVariants.skuCode,
             price: schema.productVariants.price,
             stockQuantity: schema.productVariants.stockQuantity,
+            imageUrl: schema.productVariants.imageUrl,
           })
           .from(schema.productVariants)
           .where(inArray(schema.productVariants.productId, productIds))
@@ -199,6 +236,10 @@ export async function getStoreCartLines(event: H3Event, tenantId: string, cartId
     const variant = r.variantId ? variantMap.get(r.variantId) : null
     const nextTitle = product?.title ?? r.title
     const nextSlug = product?.slug ?? r.productSlug
+    const coverUrl = product?.coverAttachmentId
+      ? (coverUrlById.get(product.coverAttachmentId) ?? null)
+      : null
+    const imageUrl = resolveCartLineImageUrl(coverUrl, variant?.imageUrl)
     const nextPrice =
       product == null
         ? r.unitPrice
@@ -229,6 +270,7 @@ export async function getStoreCartLines(event: H3Event, tenantId: string, cartId
       variantId: r.variantId,
       productSlug: nextSlug,
       title: nextTitle,
+      imageUrl,
       unitPrice: nextPrice,
       qty: r.qty,
       ...(r.optionSummary ? { optionSummary: r.optionSummary } : {}),

@@ -45,25 +45,39 @@ const hasInvalidLines = computed(() => lines.value.some((l) => l.isValid === fal
           :key="`${line.productId}:${line.variantId ?? ''}`"
           class="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between"
         >
-          <div class="min-w-0">
+          <div class="flex min-w-0 gap-4">
             <NuxtLink
               :to="`/products/${line.productSlug}`"
-              class="text-sm font-semibold text-neutral-900 hover:underline"
+              class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-neutral-200 bg-neutral-50"
             >
-              {{ line.title }}
+              <img
+                v-if="line.imageUrl"
+                :src="line.imageUrl"
+                :alt="line.title"
+                class="h-full w-full object-cover"
+              >
+              <span v-else class="text-xs text-neutral-400">無圖片</span>
             </NuxtLink>
-            <p v-if="line.optionSummary" class="mt-1 text-xs text-neutral-500">
-              {{ line.optionSummary }}
-            </p>
-            <p class="mt-1 font-mono text-xs text-neutral-500">
-              {{ formatHkd(line.unitPrice) }} × {{ line.qty }}
-            </p>
-            <p
-              v-if="line.isValid === false && line.validationMessage"
-              class="mt-2 text-xs text-red-600"
-            >
-              {{ line.validationMessage }}
-            </p>
+            <div class="min-w-0">
+              <NuxtLink
+                :to="`/products/${line.productSlug}`"
+                class="text-sm font-semibold text-neutral-900 hover:underline"
+              >
+                {{ line.title }}
+              </NuxtLink>
+              <p v-if="line.optionSummary" class="mt-1 text-xs text-neutral-500">
+                {{ line.optionSummary }}
+              </p>
+              <p class="mt-1 font-mono text-xs text-neutral-500">
+                {{ formatHkd(line.unitPrice) }} × {{ line.qty }}
+              </p>
+              <p
+                v-if="line.isValid === false && line.validationMessage"
+                class="mt-2 text-xs text-red-600"
+              >
+                {{ line.validationMessage }}
+              </p>
+            </div>
           </div>
           <div class="flex flex-wrap items-center gap-3">
             <label class="flex items-center gap-2 text-sm text-neutral-600">

@@ -252,6 +252,7 @@ async function handleAddToCart(event: MouseEvent) {
     productSlug: d.product.slug,
     variantId: activeVariant.value?.id ?? null,
     title: d.product.title,
+    imageUrl: heroImage.value,
     unitPrice: price,
     optionSummary: optionSummaryText(),
   })

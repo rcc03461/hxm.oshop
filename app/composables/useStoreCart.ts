@@ -6,6 +6,7 @@ export type StoreCartLine = {
   productSlug: string
   variantId: string | null
   title: string
+  imageUrl?: string | null
   unitPrice: string
   qty: number
   optionSummary?: string
@@ -77,6 +78,7 @@ export function useStoreCart() {
         qty: Math.min(99, cur.qty + qty),
         unitPrice: entry.unitPrice,
         title: entry.title,
+        imageUrl: entry.imageUrl,
         optionSummary: entry.optionSummary,
       })
     } else {
@@ -85,6 +87,7 @@ export function useStoreCart() {
         productSlug: entry.productSlug,
         variantId: entry.variantId,
         title: entry.title,
+        imageUrl: entry.imageUrl,
         unitPrice: entry.unitPrice,
         qty,
         optionSummary: entry.optionSummary,
