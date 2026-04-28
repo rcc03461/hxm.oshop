@@ -2,9 +2,9 @@ import { parseTenantSlugFromHost } from '~/utils/tenantHost'
 import { getRequestHostForMiddleware } from '~/utils/requestHost'
 
 /**
- * 依 Host 解析租戶 slug，供頁面與 admin middleware 使用。
+ * 依 Host 解析租戶 slug：子網域直接解析；否則向 API 取得 canonical slug（自訂網域）
  */
-export default defineNuxtRouteMiddleware(() => {
+export default defineNuxtRouteMiddleware(async () => {
   const state = useState<string | null>('oshop-tenant-slug', () => null)
   if (import.meta.client) {
     const nuxtApp = useNuxtApp()
@@ -16,5 +16,16 @@ export default defineNuxtRouteMiddleware(() => {
   const root = String(config.public.tenantRootDomain || 'shopgo.com.hk')
   const host = getRequestHostForMiddleware()
   const slug = parseTenantSlugFromHost(host, root)
-  state.value = slug
+  if (slug !== null) {
+    state.value = slug
+    return
+  }
+
+  const requestFetch = useRequestFetch()
+  try {
+    const res = await requestFetch<{ shopSlug: string | null }>('/api/store/host-context')
+    state.value = res.shopSlug ?? null
+  } catch {
+    state.value = null
+  }
 })
