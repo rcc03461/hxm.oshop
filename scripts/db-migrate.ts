@@ -46,28 +46,32 @@ async function main() {
       )
     `)
 
-    const lastRows = await sql<
-      { id: number; hash: string; created_at: string | number | bigint }[]
-    >`select id, hash, created_at from public.__drizzle_migrations order by created_at desc limit 1`
-    const lastDbMigration = lastRows[0]
+    // 以 hash 判斷是否已套用（與 journal 內容一致），勿僅用 max(created_at) 與 folderMillis 比較——
+    // 若 DB 內 created_at 與 journal 的 `when` 曾不一致，會誤判為「已跟上」而略過新 migration。
+    const appliedRows = await sql<{ hash: string }[]>`
+      select hash from public.__drizzle_migrations
+    `
+    const applied = new Set(appliedRows.map((r) => r.hash))
+    const pending = migrations.filter((m) => !applied.has(m.hash))
+    console.info(
+      `[db-migrate] 已套用 ${applied.size}/${migrations.length} 則 migration，待套用 ${pending.length} 則`,
+    )
 
     await sql.begin(async (tx) => {
       for (const migration of migrations) {
-        const lastMs = lastDbMigration
-          ? Number(lastDbMigration.created_at)
-          : 0
-        if (!lastDbMigration || lastMs < migration.folderMillis) {
-          for (const stmt of migration.sql) {
-            const trimmed = stmt.trim()
-            if (trimmed.length > 0) {
-              await tx.unsafe(trimmed)
-            }
-          }
-          await tx`
-            insert into public.__drizzle_migrations ("hash", "created_at")
-            values (${migration.hash}, ${migration.folderMillis})
-          `
+        if (applied.has(migration.hash)) {
+          continue
         }
+        for (const stmt of migration.sql) {
+          const trimmed = stmt.trim()
+          if (trimmed.length > 0) {
+            await tx.unsafe(trimmed)
+          }
+        }
+        await tx`
+          insert into public.__drizzle_migrations ("hash", "created_at")
+          values (${migration.hash}, ${migration.folderMillis})
+        `
       }
     })
 
