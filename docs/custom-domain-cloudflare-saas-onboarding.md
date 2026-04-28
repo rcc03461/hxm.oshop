@@ -11,6 +11,8 @@
 - 只做 **A**：可能有憑證，但應用查不到租戶（或錯店）。  
 - 只做 **B**：後台顯示已驗證，但瀏覽器連線可能 1001 / 無 TLS。  
 
+**後台「設定 → 自訂網域」**：可在部署時設定 `NUXT_PUBLIC_SAAS_CNAME_TARGET`（店家 CNAME 目標主機名）、`NUXT_PUBLIC_SAAS_SUPPORT_DOC_URL`（選填說明連結），畫面會帶著店家一步步操作。詳見 `.env.example`。
+
 ---
 
 ## 一、平台方一次性設定（Cloudflare）

@@ -52,6 +52,12 @@ export default defineNuxtConfig({
       /** 登入／註冊後預設後台路徑 */
       adminDefaultPath:
         process.env.NUXT_PUBLIC_ADMIN_DEFAULT_PATH || '/admin/dashboard',
+      /** 自訂網域：店家 CNAME 目標（例 origin.shopgo.com.hk）；空則後台顯示「請向平台索取」 */
+      saasCnameTarget:
+        (process.env.NUXT_PUBLIC_SAAS_CNAME_TARGET || '').trim(),
+      /** 選填：自訂網域對外說明或工單頁連結 */
+      saasSupportDocUrl:
+        (process.env.NUXT_PUBLIC_SAAS_SUPPORT_DOC_URL || '').trim(),
     },
     databaseUrl: process.env.DATABASE_URL || '',
     dbHost: process.env.db_host || process.env.DB_HOST || '',
