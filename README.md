@@ -71,6 +71,9 @@ bun run dev
 
 若仍被 Vite 擋 Host，已一併設定 `vite.server.allowedHosts` 包含 `shopgo.com.hk` 與 `.shopgo.com.hk`。
 
+**自訂網域本地測試**（hosts、`allowedHosts`、略過 DNS 的 SQL 等）見手冊  
+`docs/manual-test-tenant-customer-flow.md` → **§G. 自訂網域**。
+
 （選用）仍可用 CLI 指定對外顯示的主機名：`bun run dev -- --host shopgo.com.hk`。
 
 ### 若仍出現 `JS heap out of memory`

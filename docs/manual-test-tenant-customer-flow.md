@@ -58,7 +58,62 @@
 
 ## G. 自訂網域（Custom domain）
 
-1. 套用 migration `0020` 後，後台可用 `GET/POST /api/admin/custom-domains`、`DELETE`、`POST .../verify`；於 DNS 新增 TXT，記錄名為 `_oshop-verify.{hostname}`，值為後台回傳的 `verificationToken`。
-2. 驗證通過後，同一 Host 的 storefront 應能載入；`GET /api/store/host-context` 須回傳正確的 `shopSlug`。
-3. **Session／Cookie**：`authCookie` 僅在 `*.{tenantRootDomain}` 設 `Domain=.root`；自訂網域為 **host-only** cookie，無法與平台子網域共用 Session；若要在自訂網域操作後台須在該 hostname 重新登入。
-4. 部署層面需自訂 TLS（反向代理／CDN），本 repo 不涵蓋。
+### 正式環境流程（摘要）
+
+1. 套用 migration `0020` 後，後台 **設定 → 自訂網域**（或 API：`GET/POST /api/admin/custom-domains`、`DELETE`、`POST .../verify`）。
+2. 於 **公開 DNS** 新增 **TXT**：名稱 `_oshop-verify.{hostname}`，值為後台回傳的 `verificationToken`，再按「檢查驗證」。
+3. 驗證通過後，同一 **Host** 的 storefront 應能載入；`GET /api/store/host-context` 應回傳正確的 `shopSlug`。
+4. **Session／Cookie**：`authCookie` 僅在 `*.{tenantRootDomain}` 設 `Domain=.root`；自訂網域為 **host-only** cookie，無法與平台子網域共用 Session；若要在自訂網域操作後台，須在 **該 hostname** 下重新登入。
+5. 正式上線需在反向代理／CDN 設定該網域的 **TLS** 與轉發，本 repo 不涵蓋。
+
+### 本地如何測試（分層）
+
+#### 前置
+
+- `bun run db:migrate` 已套用（含 `tenant_custom_domains`）。
+- `bun dev` 使用專案預設 **`--host 0.0.0.0`**，與 README 一樣用 **IPv4** 連線。
+- **Windows hosts**（路徑通常為 `C:\Windows\System32\drivers\etc\hosts`）至少要有租戶子站，例如：
+
+  ```text
+  127.0.0.1 shopgo.com.hk
+  127.0.0.1 demo.shopgo.com.hk
+  ```
+
+  其中 `demo` 換成你資料庫裡實際存在的 `tenants.shop_slug`。
+
+#### 層級 1：只測後台 UI / API（不必真的驗證 DNS）
+
+1. 瀏覽器開：`http://demo.shopgo.com.hk:3000`（port 以終端機為準）。
+2. 後台帳號登入後進入 **設定 → 自訂網域**。
+3. 輸入一個 **合法測試用 hostname**（不可為 `shopgo.com.hk`、不可為 `*.shopgo.com.hk`，例如 `mystore.local`）。
+4. 預期：列表出現「等待 DNS 驗證」；此時按「檢查驗證」通常會失敗（本地無公開 TXT），屬正常。
+
+#### 層級 2：本地驗證「已生效」的網域（略過真實 DNS）
+
+本機 **hosts 無法** 設定 TXT，測試「已驗證自訂網域」時，可在開發庫 **手動標記已驗證**（僅限本機）：
+
+1. 仍先在後台 **新增** 該網域（取得列與 hostname；亦可從 DB 查看）。
+2. 用 `psql`、Drizzle Studio（`bun run db:studio`）或任意 SQL 客戶端執行（替換 hostname）：
+
+   ```sql
+   UPDATE tenant_custom_domains
+   SET verified_at = NOW()
+   WHERE hostname = 'mystore.local';
+   ```
+
+3. **Vite Host 檢查**：自訂網域的 Host 必須通過開發伺服器允許清單。請在 `nuxt.config.ts` 的 `vite.server.allowedHosts` 加入你的測試名，例如 `'mystore.local'`，**存檔後重啟** `bun dev`。
+4. 在 hosts 新增：`127.0.0.1 mystore.local`。
+5. 瀏覽器開：`http://mystore.local:3000`（勿用 `https`，除非你自己掛憑證）。
+6. 預期：前台可載入該租戶首頁；另開分頁測 `http://mystore.local:3000/api/store/host-context` 應為 JSON：`{ "shopSlug": "demo" }`（`demo` 為該筆網域所屬租戶之 slug）。
+
+#### 層級 3：真實 DNS 驗證
+
+與正式環境相同：在網域註冊商或 DNS 托管新增 `_oshop-verify.your-domain.com` 的 TXT，待傳播後在後台按「檢查驗證」。本地 dev 伺服器須能從網際網路以該 hostname 連到（或改在 staging 測此段）。
+
+#### 常見問題
+
+| 現象 | 可能原因 |
+|------|----------|
+| 開 `http://某自訂網域:3000` 被擋或 403 | 未把該 hostname 加入 `vite.server.allowedHosts` 或未重啟 dev |
+| 自訂網域後台要重新登入 | host-only cookie 與子網域不共用，屬預期 |
+| `host-context` 回 `null` | 網域未驗證、hostname 打錯、或 DB 無對應列 |
