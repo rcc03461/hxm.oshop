@@ -15,6 +15,7 @@ import { getPostgresJsSslOptions } from '../server/database/postgresOptions'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const migrationsFolder = join(__dirname, '../server/database/migrations')
+const isBaselineMode = process.argv.includes('--baseline')
 
 async function main() {
   let url: string
@@ -56,6 +57,27 @@ async function main() {
     console.info(
       `[db-migrate] 已套用 ${applied.size}/${migrations.length} 則 migration，待套用 ${pending.length} 則`,
     )
+
+    if (isBaselineMode) {
+      if (pending.length === 0) {
+        console.info('[db-migrate] baseline 模式：無待寫入 migration 記錄')
+      } else {
+        await sql.begin(async (tx) => {
+          for (const migration of pending) {
+            await tx`
+              insert into public.__drizzle_migrations ("hash", "created_at")
+              values (${migration.hash}, ${migration.folderMillis})
+              on conflict do nothing
+            `
+          }
+        })
+        console.info(
+          `[db-migrate] baseline 模式：已補寫 ${pending.length} 筆 migration 記錄（未執行 SQL）`,
+        )
+      }
+      console.info('[db-migrate] 完成')
+      return
+    }
 
     await sql.begin(async (tx) => {
       for (const migration of migrations) {

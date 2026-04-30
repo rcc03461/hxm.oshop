@@ -268,6 +268,32 @@ async function removeDomain(id: string) {
   }
 }
 
+/** 將 Cloudflare Custom Hostname 的 custom_origin 設為平台上的 CNAME／Fallback 目標，修正回源 SNI 不符導致的 525。 */
+async function repairCfOrigin(id: string) {
+  if (!saasCnameTarget.value) {
+    actionErr.value =
+      '平台尚未設定 CNAME 目標（NUXT_PUBLIC_SAAS_CNAME_TARGET），無法套用回源。請聯絡平台管理員。'
+    actionOk.value = null
+    return
+  }
+  busyId.value = id
+  actionErr.value = null
+  actionOk.value = null
+  try {
+    await $fetch(`/api/admin/custom-domains/${id}/repair-cf-origin`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+    actionOk.value =
+      '已送出：Cloudflare 會把此網域回源 SNI 改為與 CNAME 目標一致。數分鐘後再試訪問；若仍失敗請重新整理本頁。'
+    await refresh()
+  } catch (e: unknown) {
+    actionErr.value = errMessage(e)
+  } finally {
+    busyId.value = null
+  }
+}
+
 const txtRecordName = computed(() =>
   dnsHint.value ? `_oshop-verify.${dnsHint.value.hostname}` : '',
 )
@@ -300,6 +326,10 @@ function formatTime(iso: string | null): string {
         <p class="mt-2 text-sm text-neutral-600">
           完成下方步驟後，顧客可用你的網址造訪商店。請依序處理：<strong>流量導向（CNAME）</strong>、
           <strong>HTTPS 憑證</strong>（若平台使用 Cloudflare for SaaS）、以及 <strong>本頁的商店歸屬驗證（TXT）</strong>——三層都完成，網址與 HTTPS 才會正常。
+          <span
+            v-if="saasCnameTarget"
+            class="mt-1 block text-neutral-500"
+          >若瀏覽器出現 <strong class="font-medium text-neutral-700">錯誤 525／SSL handshake failed</strong>，請在下列列表對帶「CF」標籤的網域按「套用 CF 回源」。</span>
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-2 border-b border-neutral-200 pb-3">
@@ -687,6 +717,16 @@ function formatTime(iso: string | null): string {
               >
                 已驗證
               </span>
+              <button
+                v-if="row.cfLinked"
+                type="button"
+                class="rounded-md border border-sky-200 bg-white px-3 py-1.5 text-xs text-sky-800 hover:bg-sky-50 disabled:opacity-50"
+                title="將 Cloudflare 回源 TLS 的 SNI 設為平台上的 CNAME 目標（與 Fallback 一致），可排除錯誤 525。"
+                :disabled="busyId !== null || !saasCnameTarget"
+                @click="repairCfOrigin(row.id)"
+              >
+                套用 CF 回源
+              </button>
               <button
                 type="button"
                 class="rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs text-red-700 hover:bg-red-50 disabled:opacity-50"

@@ -99,6 +99,8 @@ node --max-old-space-size=6144 ./node_modules/nuxt/bin/nuxt.mjs dev --host 0.0.0
 ```bash
 bun run db:generate   # 變更 schema 後重新產生 SQL（已有初始檔則通常不需重跑）
 bun run db:migrate    # 套用 migrations（自訂腳本 scripts/db-migrate.ts，會印出完整錯誤）
+bun run db:baseline   # 僅補寫 migration 紀錄（不執行 SQL，給既有資料庫接手時使用）
+bun run db:repair:custom-domains # 補齊 tenant_custom_domains 欄位/索引（既有舊庫修復）
 ```
 
 說明：`drizzle-kit migrate` 會先執行 `CREATE SCHEMA "drizzle"`，許多雲端資料庫的應用程式帳號**沒有建 schema 權限**會失敗。專案改為使用 `bun run db:migrate`，只在 `public` 建立 `__drizzle_migrations` 並執行 migration SQL。

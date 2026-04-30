@@ -11,6 +11,8 @@
     "postinstall": "nuxt prepare",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun scripts/db-migrate.ts",
+    "db:baseline": "bun scripts/db-migrate.ts --baseline",
+    "db:repair:custom-domains": "bun scripts/db-repair-custom-domains.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed:catalog": "bun scripts/db-seed-catalog.ts"
