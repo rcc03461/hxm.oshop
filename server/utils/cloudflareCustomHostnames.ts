@@ -7,7 +7,7 @@ type CfApiEnvelope<T> = {
   result: T | null
 }
 
-(errors: CfApiEnvelope<unknown>['errors']): string {
+function summarizeCfErrors(errors: CfApiEnvelope<unknown>['errors']): string {
   if (!errors?.length) return '未知錯誤'
   return errors.map((e) => `[${e.code}] ${e.message}`).join('; ')
 }
