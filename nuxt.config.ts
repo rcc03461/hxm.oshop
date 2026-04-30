@@ -86,6 +86,7 @@ export default defineNuxtConfig({
   sentry: {
     org: 'cre8ir',
     project: 'javascript-nuxt',
+    telemetry: false,
   },
 
   sourcemap: {
