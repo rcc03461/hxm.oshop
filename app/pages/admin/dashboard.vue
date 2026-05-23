@@ -20,6 +20,12 @@ const { data: analytics, error, pending } = await useAsyncData(
     }),
 )
 
+/** 硬重新整理時須等 client 掛載且版面穩定後再初始化 Chart.js */
+const chartsReady = ref(false)
+onMounted(() => {
+  chartsReady.value = true
+})
+
 function formatMoney(amount: string, currency = 'HKD') {
   const n = Number(amount)
   if (Number.isNaN(n)) return amount
@@ -350,13 +356,12 @@ const dailyOrdersConfig = computed((): Omit<ChartConfiguration, 'type'> | null =
             已付款、運送中、已簽收訂單
           </p>
           <div class="mt-4 h-56">
-            <ClientOnly>
-              <AdminDashboardChart
-                v-if="revenueTrendConfig"
-                type="line"
-                :config="revenueTrendConfig"
-              />
-            </ClientOnly>
+            <AdminDashboardChart
+              v-if="chartsReady && revenueTrendConfig"
+              :key="`revenue-${analytics.generatedAt}`"
+              type="line"
+              :config="revenueTrendConfig"
+            />
           </div>
         </section>
 
@@ -368,16 +373,18 @@ const dailyOrdersConfig = computed((): Omit<ChartConfiguration, 'type'> | null =
             全部訂單分佈
           </p>
           <div class="mt-4 h-56">
-            <ClientOnly>
-              <AdminDashboardChart
-                v-if="statusChartConfig"
-                type="doughnut"
-                :config="statusChartConfig"
-              />
-              <p v-else class="flex h-full items-center justify-center text-sm text-neutral-400">
-                尚無訂單
-              </p>
-            </ClientOnly>
+            <AdminDashboardChart
+              v-if="chartsReady && statusChartConfig"
+              :key="`status-${analytics.generatedAt}`"
+              type="doughnut"
+              :config="statusChartConfig"
+            />
+            <p
+              v-else-if="chartsReady"
+              class="flex h-full items-center justify-center text-sm text-neutral-400"
+            >
+              尚無訂單
+            </p>
           </div>
         </section>
       </div>
@@ -391,13 +398,12 @@ const dailyOrdersConfig = computed((): Omit<ChartConfiguration, 'type'> | null =
             依香港時間統計每小時訂單量
           </p>
           <div class="mt-4 h-52">
-            <ClientOnly>
-              <AdminDashboardChart
-                v-if="ordersByHourConfig"
-                type="bar"
-                :config="ordersByHourConfig"
-              />
-            </ClientOnly>
+            <AdminDashboardChart
+              v-if="chartsReady && ordersByHourConfig"
+              :key="`hour-${analytics.generatedAt}`"
+              type="bar"
+              :config="ordersByHourConfig"
+            />
           </div>
         </section>
 
@@ -409,13 +415,12 @@ const dailyOrdersConfig = computed((): Omit<ChartConfiguration, 'type'> | null =
             含所有狀態
           </p>
           <div class="mt-4 h-52">
-            <ClientOnly>
-              <AdminDashboardChart
-                v-if="dailyOrdersConfig"
-                type="bar"
-                :config="dailyOrdersConfig"
-              />
-            </ClientOnly>
+            <AdminDashboardChart
+              v-if="chartsReady && dailyOrdersConfig"
+              :key="`daily-${analytics.generatedAt}`"
+              type="bar"
+              :config="dailyOrdersConfig"
+            />
           </div>
         </section>
       </div>

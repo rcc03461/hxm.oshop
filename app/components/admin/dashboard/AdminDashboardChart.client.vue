@@ -16,22 +16,32 @@ const props = defineProps<{
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 let chart: Chart | null = null
 
-function renderChart() {
+/** Chart.js 不接受 Vue reactive proxy，且須等 canvas 掛載後再繪製 */
+function buildChartConfig(): ChartConfiguration {
+  const raw = toRaw(props.config)
+  return {
+    type: props.type,
+    data: structuredClone(toRaw(raw.data)),
+    options: raw.options ? toRaw(raw.options) : undefined,
+    plugins: raw.plugins ? toRaw(raw.plugins) : undefined,
+  }
+}
+
+async function renderChart() {
+  await nextTick()
   if (!canvasRef.value) return
   chart?.destroy()
-  chart = new Chart(canvasRef.value, {
-    type: props.type,
-    ...props.config,
-  })
+  chart = new Chart(canvasRef.value, buildChartConfig())
+  requestAnimationFrame(() => chart?.resize())
 }
 
 watch(
   () => [props.type, props.config] as const,
-  () => renderChart(),
-  { deep: true },
+  () => void renderChart(),
+  { deep: true, flush: 'post' },
 )
 
-onMounted(() => renderChart())
+onMounted(() => void renderChart())
 onUnmounted(() => {
   chart?.destroy()
   chart = null
