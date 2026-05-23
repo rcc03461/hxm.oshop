@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { createError } from 'h3'
 import * as schema from '../database/schema'
 import { couponCodeSchema } from './couponSchemas'
+import { assertCouponUsesAvailable } from './couponUsage'
 import {
   compareDecimal,
   decimalMin,
@@ -77,6 +78,8 @@ export async function applyCouponToCheckout(
   if (now < coupon.startsAt.getTime() || now > coupon.endsAt.getTime()) {
     throw createError({ statusCode: 400, message: '優惠碼不在有效期限內' })
   }
+
+  await assertCouponUsesAvailable(db, coupon.id, coupon.maxUses)
 
   const restricted = await db
     .select({ productId: schema.couponProducts.productId })

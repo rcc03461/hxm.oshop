@@ -15,6 +15,7 @@ import {
 } from 'drizzle-orm'
 import * as schema from '../../../database/schema'
 import { getDb } from '../../../utils/db'
+import { countCouponUsesByIds } from '../../../utils/couponUsage'
 import { requireTenantSession } from '../../../utils/requireTenantSession'
 
 const DEFAULT_PAGE_SIZE = 20
@@ -124,6 +125,7 @@ export default defineEventHandler(async (event) => {
       minOrderAmount: schema.coupons.minOrderAmount,
       discountType: schema.coupons.discountType,
       discountValue: schema.coupons.discountValue,
+      maxUses: schema.coupons.maxUses,
       status: schema.coupons.status,
       updatedAt: schema.coupons.updatedAt,
     })
@@ -135,6 +137,7 @@ export default defineEventHandler(async (event) => {
 
   const couponIds = rows.map((r) => r.id)
   const productCountMap = new Map<string, number>()
+  const usedCountMap = await countCouponUsesByIds(db, couponIds)
   if (couponIds.length > 0) {
     const countRows = await db
       .select({
@@ -152,10 +155,12 @@ export default defineEventHandler(async (event) => {
   return {
     items: rows.map((r) => {
       const productCount = productCountMap.get(r.id) ?? 0
+      const usedCount = usedCountMap.get(r.id) ?? 0
       return {
         ...r,
         productCount,
         appliesToAllProducts: productCount === 0,
+        usedCount,
       }
     }),
     page,

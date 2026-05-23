@@ -16,6 +16,8 @@ type Row = {
   updatedAt: string
   productCount: number
   appliesToAllProducts: boolean
+  maxUses: number | null
+  usedCount: number
 }
 
 type CouponStatus = 'active' | 'inactive'
@@ -96,6 +98,13 @@ function formatMinAmount(amount: string | null) {
 function formatProducts(row: Row) {
   if (row.appliesToAllProducts) return '全店商品'
   return `${row.productCount} 件商品`
+}
+
+function formatUsage(row: Row) {
+  if (row.maxUses == null) {
+    return `已用 ${row.usedCount}（無上限）`
+  }
+  return `${row.usedCount} / ${row.maxUses}`
 }
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -217,6 +226,7 @@ async function onFormSaved() {
             <th class="px-4 py-3">優惠期間</th>
             <th class="px-4 py-3">門檻／折扣</th>
             <th class="px-4 py-3">適用商品</th>
+            <th class="px-4 py-3">使用次數</th>
             <th class="px-4 py-3">狀態</th>
             <th class="px-4 py-3">更新</th>
             <th class="px-4 py-3" />
@@ -224,12 +234,12 @@ async function onFormSaved() {
         </thead>
         <tbody class="divide-y divide-neutral-200">
           <tr v-if="pending">
-            <td colspan="8" class="px-4 py-6 text-center text-neutral-500">
+            <td colspan="9" class="px-4 py-6 text-center text-neutral-500">
               載入中…
             </td>
           </tr>
           <tr v-else-if="!data?.items.length">
-            <td colspan="8" class="px-4 py-6 text-center text-neutral-500">
+            <td colspan="9" class="px-4 py-6 text-center text-neutral-500">
               尚無優惠碼
             </td>
           </tr>
@@ -255,6 +265,9 @@ async function onFormSaved() {
             </td>
             <td class="px-4 py-3 text-neutral-700">
               {{ formatProducts(row) }}
+            </td>
+            <td class="px-4 py-3 text-neutral-700">
+              {{ formatUsage(row) }}
             </td>
             <td class="whitespace-nowrap px-4 py-3">
               <AdminStatusSwitch

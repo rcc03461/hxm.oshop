@@ -169,6 +169,13 @@
       "when": 1777452000000,
       "tag": "0024_shop_orders_coupon",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1777454400000,
+      "tag": "0025_coupons_max_uses",
+      "breakpoints": true
     }
   ]
 }

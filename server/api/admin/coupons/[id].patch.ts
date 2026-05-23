@@ -5,6 +5,7 @@ import * as schema from '../../../database/schema'
 import { getDb } from '../../../utils/db'
 import { adminPatchCouponBodySchema } from '../../../utils/couponSchemas'
 import { syncCouponProducts } from '../../../utils/couponProductSync'
+import { assertMaxUsesNotBelowUsed } from '../../../utils/couponUsage'
 import { getPgSqlState, summarizeDbErrorForLog } from '../../../utils/dbErrors'
 import { requireTenantSession } from '../../../utils/requireTenantSession'
 
@@ -70,6 +71,10 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    if ('maxUses' in patch) {
+      await assertMaxUsesNotBelowUsed(db, couponId, patch.maxUses ?? null)
+    }
+
     const next: Partial<typeof schema.coupons.$inferInsert> = {
       updatedAt: new Date(),
     }
@@ -82,6 +87,7 @@ export default defineEventHandler(async (event) => {
     if (patch.discountType !== undefined) next.discountType = patch.discountType
     if (patch.discountValue !== undefined) next.discountValue = patch.discountValue
     if (patch.status !== undefined) next.status = patch.status
+    if ('maxUses' in patch) next.maxUses = patch.maxUses ?? null
 
     const [updated] = await db
       .update(schema.coupons)

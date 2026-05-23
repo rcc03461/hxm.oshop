@@ -32,6 +32,12 @@ const optionalMinOrderSchema = z
 
 const productIdsSchema = z.array(z.string().uuid()).max(500, '適用商品過多')
 
+/** 留空／null 表示可使用次數無上限 */
+const optionalMaxUsesSchema = z
+  .union([z.number().int().min(1, '使用次數至少為 1').max(1_000_000), z.null()])
+  .optional()
+  .transform((v) => (v === undefined ? undefined : v))
+
 function validateDiscount(
   discountType: 'fixed' | 'percent',
   discountValue: string,
@@ -84,6 +90,7 @@ const couponBodyBase = z.object({
   discountType: couponDiscountTypeSchema,
   discountValue: decimalStringSchema,
   status: couponStatusSchema.optional().default('active'),
+  maxUses: optionalMaxUsesSchema,
   productIds: productIdsSchema.optional().default([]),
 })
 
@@ -111,6 +118,7 @@ export const adminPatchCouponBodySchema = z
     discountType: couponDiscountTypeSchema.optional(),
     discountValue: decimalStringSchema.optional(),
     status: couponStatusSchema.optional(),
+    maxUses: optionalMaxUsesSchema,
     productIds: productIdsSchema.optional(),
   })
   .superRefine((data, ctx) => {

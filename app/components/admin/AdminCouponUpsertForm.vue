@@ -11,8 +11,10 @@ type Detail = {
     discountType: string
     discountValue: string
     status: string
+    maxUses: number | null
   }
   productIds: string[]
+  usedCount?: number
 }
 
 const props = defineProps<{
@@ -36,8 +38,11 @@ const form = reactive({
   minOrderAmount: '',
   discountType: 'fixed' as 'fixed' | 'percent',
   discountValue: '',
+  maxUses: '',
   status: 'active' as 'active' | 'inactive',
 })
+
+const usedCount = ref(0)
 
 const productIds = ref<string[]>([])
 const loading = ref(false)
@@ -48,6 +53,14 @@ const startsAtId = useId()
 const endsAtId = useId()
 const discountTypeId = useId()
 const statusId = useId()
+const maxUsesId = useId()
+
+function maxUsesText(value: unknown = form.maxUses) {
+  if (value === '' || value == null) return ''
+  return String(value).trim()
+}
+
+const hasMaxUsesLimit = computed(() => maxUsesText().length > 0)
 
 function toDateTimeLocalValue(iso: string) {
   const d = new Date(iso)
@@ -65,8 +78,10 @@ function resetForm() {
   form.minOrderAmount = ''
   form.discountType = 'fixed'
   form.discountValue = ''
+  form.maxUses = ''
   form.status = 'active'
   productIds.value = []
+  usedCount.value = 0
 }
 
 async function loadDetail() {
@@ -84,6 +99,9 @@ async function loadDetail() {
     detail.coupon.discountType === 'percent' ? 'percent' : 'fixed'
   form.discountValue = detail.coupon.discountValue
   form.status = detail.coupon.status === 'inactive' ? 'inactive' : 'active'
+  form.maxUses =
+    detail.coupon.maxUses != null ? String(detail.coupon.maxUses) : ''
+  usedCount.value = detail.usedCount ?? 0
   productIds.value = [...detail.productIds]
 }
 
@@ -115,6 +133,15 @@ function buildPayload() {
   if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
     throw new Error('請填寫有效的優惠期間')
   }
+  let maxUses: number | null = null
+  const maxUsesRaw = maxUsesText()
+  if (maxUsesRaw) {
+    const n = Number(maxUsesRaw)
+    if (!Number.isInteger(n) || n < 1) {
+      throw new Error('使用次數須為正整數')
+    }
+    maxUses = n
+  }
   return {
     name: form.name,
     code: form.code,
@@ -125,6 +152,7 @@ function buildPayload() {
     discountType: form.discountType,
     discountValue: form.discountValue.trim(),
     status: form.status,
+    maxUses,
     productIds: productIds.value,
   }
 }
@@ -184,8 +212,7 @@ const discountValueHint = computed(() =>
       <AdminFormTextInput
         v-model="form.code"
         label="優惠碼代號"
-        hint="儲存時會轉為大寫；英數與連字號"
-        pattern="[A-Za-z0-9-]+"
+        hint="儲存時會轉為大寫；僅英文、數字與連字號（由伺服器驗證）"
         required
         input-class="font-mono uppercase"
       />
@@ -238,6 +265,28 @@ const discountValueHint = computed(() =>
       />
 
       <AdminCouponProductFields v-model="productIds" />
+
+      <AdminFormField
+        label="可使用次數（可留空）"
+        hint="留空表示無上限；已使用次數不含付款失敗的訂單"
+        :for-id="maxUsesId"
+      >
+        <input
+          :id="maxUsesId"
+          v-model="form.maxUses"
+          type="number"
+          min="1"
+          step="1"
+          placeholder="無上限"
+          class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm shadow-sm"
+        />
+        <p v-if="isEdit" class="mt-1 text-xs text-neutral-500">
+          目前已使用 {{ usedCount }} 次
+          <template v-if="hasMaxUsesLimit">
+            ／上限 {{ maxUsesText() }} 次
+          </template>
+        </p>
+      </AdminFormField>
 
       <AdminFormField label="狀態" :for-id="statusId">
         <select

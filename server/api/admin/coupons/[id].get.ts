@@ -3,6 +3,7 @@ import { createError } from 'h3'
 import { z } from 'zod'
 import * as schema from '../../../database/schema'
 import { getDb } from '../../../utils/db'
+import { countCouponUses } from '../../../utils/couponUsage'
 import { requireTenantSession } from '../../../utils/requireTenantSession'
 
 const uuidParam = z.string().uuid('優惠碼 id 格式不正確')
@@ -48,8 +49,11 @@ export default defineEventHandler(async (event) => {
       asc(schema.products.title),
     )
 
+  const usedCount = await countCouponUses(db, couponId)
+
   return {
     coupon: row,
+    usedCount,
     productIds: productRows.map((p) => p.productId),
     products: productRows.map((p) => ({
       id: p.productId,

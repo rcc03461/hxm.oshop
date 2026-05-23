@@ -31,6 +31,7 @@ export default defineEventHandler(async (event) => {
         minOrderAmount: data.minOrderAmount ?? null,
         discountType: data.discountType,
         discountValue: data.discountValue,
+        maxUses: data.maxUses ?? null,
         status: data.status,
         updatedAt: new Date(),
       })

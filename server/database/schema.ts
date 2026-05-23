@@ -732,6 +732,8 @@ export const coupons = pgTable(
     /** fixed：減固定金額；percent：折扣百分比（0–100） */
     discountType: varchar('discount_type', { length: 16 }).notNull(),
     discountValue: numeric('discount_value', { precision: 14, scale: 4 }).notNull(),
+    /** null 表示可使用次數無上限 */
+    maxUses: integer('max_uses'),
     status: varchar('status', { length: 32 }).notNull().default('active'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
