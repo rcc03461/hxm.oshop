@@ -25,6 +25,7 @@
     "@sentry/nuxt": "10",
     "@vueup/vue-quill": "^1.2.0",
     "bcryptjs": "^3.0.3",
+    "chart.js": "^4.5.1",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
     "jose": "^6.2.2",
