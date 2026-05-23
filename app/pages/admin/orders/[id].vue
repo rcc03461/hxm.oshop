@@ -27,6 +27,9 @@ type Detail = {
     currency: string
     subtotal: string
     total: string
+    couponId: string | null
+    couponCode: string | null
+    discountAmount: string
     customerEmail: string | null
     shippingData: Record<string, unknown> | null
     createdAt: string
@@ -368,6 +371,20 @@ async function saveCustomerProfile() {
           </dt>
           <dd class="mt-1 text-sm font-medium text-neutral-900">
             {{ formatMoney(data.order.subtotal, data.order.currency) }}
+          </dd>
+        </div>
+        <div v-if="data.order.couponCode">
+          <dt class="text-xs font-medium uppercase tracking-wide text-neutral-500">
+            優惠碼
+          </dt>
+          <dd class="mt-1 font-mono text-sm text-neutral-900">
+            {{ data.order.couponCode }}
+            <span
+              v-if="Number(data.order.discountAmount) > 0"
+              class="ml-2 text-red-600"
+            >
+              −{{ formatMoney(data.order.discountAmount, data.order.currency) }}
+            </span>
           </dd>
         </div>
         <div>

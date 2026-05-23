@@ -51,6 +51,9 @@ export default defineEventHandler(async (event) => {
       currency: order.currency,
       subtotal: String(order.subtotal),
       total: String(order.total),
+      couponId: order.couponId,
+      couponCode: order.couponCode,
+      discountAmount: String(order.discountAmount ?? '0'),
       customerEmail: order.customerEmail,
       shippingData:
         order.shippingData && typeof order.shippingData === 'object'

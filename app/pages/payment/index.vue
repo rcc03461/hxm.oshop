@@ -65,6 +65,15 @@ const selectedAddressId = ref<string>('manual')
 const saveForNextUse = ref(false)
 const busy = ref(false)
 const err = ref<string | null>(null)
+const couponCodeInput = ref('')
+const couponApplying = ref(false)
+const couponErr = ref<string | null>(null)
+const appliedCoupon = ref<{
+  code: string
+  name: string
+  discountAmount: string
+  total: string
+} | null>(null)
 
 const { data: optionsData } = await useAsyncData(
   'store-payment-options',
@@ -180,11 +189,76 @@ watch(
   { immediate: true },
 )
 
+const displayTotal = computed(() => appliedCoupon.value?.total ?? subtotalMoney.value)
+
+watch(
+  () => lines.value.map((l) => `${l.productId}:${l.variantId ?? ''}:${l.qty}`).join('|'),
+  () => {
+    if (!appliedCoupon.value) return
+    appliedCoupon.value = null
+    couponErr.value = '購物車內容已變更，請重新套用優惠碼'
+  },
+)
+
 onMounted(() => {
   if (tenantSlug.value && lines.value.length === 0) {
     void navigateTo('/cart')
   }
 })
+
+async function applyCoupon() {
+  couponErr.value = null
+  const code = couponCodeInput.value.trim()
+  if (!code) {
+    appliedCoupon.value = null
+    return
+  }
+  if (!tenantSlug.value) return
+  await syncFromServer()
+  if (lines.value.length === 0) return
+
+  couponApplying.value = true
+  try {
+    const res = await requestFetch<{
+      ok: true
+      coupon: { code: string; name: string }
+      discountAmount: string
+      total: string
+    }>('/api/store/coupons/preview', {
+      method: 'POST',
+      body: {
+        code,
+        items: lines.value.map((l) => ({
+          productId: l.productId,
+          variantId: l.variantId,
+          quantity: l.qty,
+        })),
+      },
+    })
+    appliedCoupon.value = {
+      code: res.coupon.code,
+      name: res.coupon.name,
+      discountAmount: res.discountAmount,
+      total: res.total,
+    }
+    couponCodeInput.value = res.coupon.code
+  } catch (e: unknown) {
+    appliedCoupon.value = null
+    const msg =
+      e && typeof e === 'object' && 'data' in e
+        ? String((e as { data?: { message?: string } }).data?.message ?? '')
+        : ''
+    couponErr.value = msg || (e instanceof Error ? e.message : '優惠碼無效')
+  } finally {
+    couponApplying.value = false
+  }
+}
+
+function clearCoupon() {
+  appliedCoupon.value = null
+  couponCodeInput.value = ''
+  couponErr.value = null
+}
 
 async function submitCheckout() {
   err.value = null
@@ -284,6 +358,9 @@ async function submitCheckout() {
           variantId: l.variantId,
           quantity: l.qty,
         })),
+        ...(appliedCoupon.value
+          ? { couponCode: appliedCoupon.value.code }
+          : {}),
       },
     })
     if (res.redirectUrl) {
@@ -338,12 +415,61 @@ async function submitCheckout() {
             </span>
           </li>
         </ul>
-        <p class="mt-4 border-t border-neutral-200 pt-4 text-right text-base font-semibold text-neutral-900">
-          合計 {{ formatHkd(subtotalMoney) }}
-        </p>
+        <div class="mt-4 space-y-1 border-t border-neutral-200 pt-4 text-sm">
+          <div class="flex justify-between text-neutral-600">
+            <span>小計</span>
+            <span>{{ formatHkd(subtotalMoney) }}</span>
+          </div>
+          <div
+            v-if="appliedCoupon"
+            class="flex justify-between text-red-600"
+          >
+            <span>優惠（{{ appliedCoupon.code }}）</span>
+            <span>−{{ formatHkd(appliedCoupon.discountAmount) }}</span>
+          </div>
+          <p class="text-right text-base font-semibold text-neutral-900">
+            應付 {{ formatHkd(displayTotal) }}
+          </p>
+        </div>
       </section>
 
       <form v-if="lines.length > 0" class="mt-8 space-y-6" @submit.prevent="submitCheckout">
+        <div class="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+          <label class="block text-sm font-medium text-neutral-800">優惠碼</label>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <input
+              v-model="couponCodeInput"
+              type="text"
+              class="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-mono uppercase outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+              placeholder="輸入優惠碼"
+              :disabled="couponApplying || busy"
+              @keydown.enter.prevent="applyCoupon"
+            >
+            <button
+              type="button"
+              class="rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
+              :disabled="couponApplying || busy || !couponCodeInput.trim()"
+              @click="applyCoupon"
+            >
+              {{ couponApplying ? '驗證中…' : '套用' }}
+            </button>
+            <button
+              v-if="appliedCoupon"
+              type="button"
+              class="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
+              :disabled="busy"
+              @click="clearCoupon"
+            >
+              移除
+            </button>
+          </div>
+          <p v-if="appliedCoupon" class="mt-2 text-xs text-green-700">
+            已套用「{{ appliedCoupon.name }}」
+          </p>
+          <p v-if="couponErr" class="mt-2 text-xs text-red-600">
+            {{ couponErr }}
+          </p>
+        </div>
         <div>
           <label class="block text-sm font-medium text-neutral-800">聯絡 Email（選填）</label>
           <input

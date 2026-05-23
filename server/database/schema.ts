@@ -565,6 +565,11 @@ export const shopOrders = pgTable(
     currency: varchar('currency', { length: 8 }).notNull().default('HKD'),
     subtotal: numeric('subtotal', { precision: 14, scale: 4 }).notNull(),
     total: numeric('total', { precision: 14, scale: 4 }).notNull(),
+    couponId: uuid('coupon_id').references(() => coupons.id, { onDelete: 'set null' }),
+    couponCode: varchar('coupon_code', { length: 64 }),
+    discountAmount: numeric('discount_amount', { precision: 14, scale: 4 })
+      .notNull()
+      .default('0'),
     customerEmail: varchar('customer_email', { length: 255 }),
     shippingData: jsonb('shipping_data').$type<ShopOrderShippingDataJson>(),
     createdAt: timestamp('created_at', { withTimezone: true })
@@ -583,6 +588,7 @@ export const shopOrders = pgTable(
       t.customerId,
       t.createdAt,
     ),
+    index('shop_orders_coupon_id_idx').on(t.couponId),
   ],
 )
 

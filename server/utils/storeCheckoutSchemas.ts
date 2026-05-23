@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { couponCodeSchema } from './couponSchemas'
 
 export const storeCheckoutItemSchema = z.object({
   productId: z.string().uuid('商品 id 格式不正確'),
@@ -40,6 +41,15 @@ export const storeCheckoutBodySchema = z.object({
         .transform((v) => (v && v.trim() ? v.trim() : undefined)),
     })
     .optional(),
+  items: z.array(storeCheckoutItemSchema).min(1).max(50),
+  couponCode: z
+    .union([couponCodeSchema, z.literal('')])
+    .optional()
+    .transform((v) => (v === '' || v === undefined ? undefined : v)),
+})
+
+export const storeCouponPreviewBodySchema = z.object({
+  code: couponCodeSchema,
   items: z.array(storeCheckoutItemSchema).min(1).max(50),
 })
 

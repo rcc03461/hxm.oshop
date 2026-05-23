@@ -2,6 +2,7 @@ import { and, asc, eq } from 'drizzle-orm'
 import { createError } from 'h3'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import * as schema from '../database/schema'
+import { decimalMul, sumDecimals } from './decimalMoney'
 
 export type ShopDb = PostgresJsDatabase<typeof schema>
 
@@ -19,19 +20,6 @@ export type ResolvedOrderLine = {
   unitPrice: string
   quantity: number
   lineTotal: string
-}
-
-function decimalMul(price: string, qty: number): string {
-  const n = Number(price) * qty
-  if (!Number.isFinite(n)) {
-    throw createError({ statusCode: 400, message: '價格計算異常' })
-  }
-  return n.toFixed(4)
-}
-
-function sumDecimals(values: string[]): string {
-  const s = values.reduce((a, b) => a + Number(b), 0)
-  return s.toFixed(4)
 }
 
 /**

@@ -11,6 +11,9 @@ type InvoiceDetail = {
   currency: string
   subtotal: string
   total: string
+  couponCode: string | null
+  couponName: string | null
+  discountAmount: string
   customerEmail: string | null
   paymentProvider: string | null
   createdAt: string
@@ -51,6 +54,10 @@ function providerLabel(s: string | null) {
   if (s === 'stripe') return 'Stripe'
   if (s === 'paypal') return 'PayPal'
   return s
+}
+
+function hasCouponDiscount(order: InvoiceDetail) {
+  return Boolean(order.couponCode) && Number(order.discountAmount) > 0
 }
 </script>
 
@@ -112,8 +119,26 @@ function providerLabel(s: string | null) {
             <span class="text-neutral-600">小計</span>
             <span class="font-medium text-neutral-900">{{ formatHkd(data.order.subtotal) }}</span>
           </div>
+          <div
+            v-if="hasCouponDiscount(data.order)"
+            class="mt-2 flex items-start justify-between gap-3 text-red-700"
+          >
+            <span class="text-neutral-600">
+              優惠
+              <span class="mt-0.5 block font-mono text-xs text-neutral-800">
+                {{ data.order.couponCode }}
+              </span>
+              <span
+                v-if="data.order.couponName"
+                class="mt-0.5 block text-xs text-neutral-500"
+              >
+                {{ data.order.couponName }}
+              </span>
+            </span>
+            <span class="shrink-0 font-medium">−{{ formatHkd(data.order.discountAmount) }}</span>
+          </div>
           <div class="mt-2 flex items-center justify-between border-t border-neutral-200 pt-2">
-            <span class="text-neutral-600">總計</span>
+            <span class="text-neutral-600">應付總計</span>
             <span class="text-base font-semibold text-neutral-900">{{ formatHkd(data.order.total) }}</span>
           </div>
         </div>

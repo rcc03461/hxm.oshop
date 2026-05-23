@@ -6,6 +6,10 @@ import {
   parseProviderConfig,
   type PaypalPaymentConfig,
 } from '../../utils/paymentProviderSchemas'
+import {
+  applyCouponToCheckout,
+  scaleOrderLinesToPaymentTotal,
+} from '../../utils/storeCouponApply'
 import { resolveCheckoutLines } from '../../utils/storeCheckoutResolveLines'
 import { storeCheckoutBodySchema } from '../../utils/storeCheckoutSchemas'
 import { getOrderEventTypeByStatus } from '../../utils/orderHistory'
@@ -41,11 +45,31 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '此付款方式未啟用' })
   }
 
-  const { lines, subtotal, total } = await resolveCheckoutLines(
+  const { lines, subtotal } = await resolveCheckoutLines(
     db,
     tenant.id,
     input.items,
   )
+
+  let total = subtotal
+  let couponId: string | null = null
+  let couponCode: string | null = null
+  let discountAmount = '0.0000'
+
+  if (input.couponCode) {
+    const applied = await applyCouponToCheckout(
+      db,
+      tenant.id,
+      input.couponCode,
+      lines,
+    )
+    total = applied.total
+    couponId = applied.couponId
+    couponCode = applied.code
+    discountAmount = applied.discountAmount
+  }
+
+  const paymentLines = scaleOrderLinesToPaymentTotal(lines, total)
 
   const [order] = await db
     .insert(schema.shopOrders)
@@ -57,6 +81,9 @@ export default defineEventHandler(async (event) => {
       currency: 'HKD',
       subtotal,
       total,
+      couponId,
+      couponCode,
+      discountAmount,
       customerEmail:
         input.customerEmail ?? input.shipping?.email ?? customerSession?.email ?? null,
       shippingData: input.shipping ?? null,
@@ -91,6 +118,7 @@ export default defineEventHandler(async (event) => {
       status: order.status,
       paymentProvider: order.paymentProvider,
       total: String(order.total),
+      ...(couponCode ? { couponCode, discountAmount } : {}),
     },
   })
 
@@ -118,7 +146,7 @@ export default defineEventHandler(async (event) => {
         'metadata[shop]': tenant.shopSlug,
       }
 
-      lines.forEach((line, i) => {
+      paymentLines.forEach((line, i) => {
         const cents = Math.round(Number(line.unitPrice) * 100)
         flat[`line_items[${i}][quantity]`] = String(line.quantity)
         flat[`line_items[${i}][price_data][currency]`] = 'hkd'

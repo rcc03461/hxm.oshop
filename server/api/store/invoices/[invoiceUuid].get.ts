@@ -23,11 +23,15 @@ export default defineEventHandler(async (event) => {
       currency: schema.shopOrders.currency,
       subtotal: schema.shopOrders.subtotal,
       total: schema.shopOrders.total,
+      couponCode: schema.shopOrders.couponCode,
+      discountAmount: schema.shopOrders.discountAmount,
+      couponName: schema.coupons.name,
       customerEmail: schema.shopOrders.customerEmail,
       paymentProvider: schema.shopOrders.paymentProvider,
       createdAt: schema.shopOrders.createdAt,
     })
     .from(schema.shopOrders)
+    .leftJoin(schema.coupons, eq(schema.shopOrders.couponId, schema.coupons.id))
     .where(
       and(
         eq(schema.shopOrders.tenantId, tenant.id),
@@ -57,6 +61,9 @@ export default defineEventHandler(async (event) => {
       ...order,
       subtotal: String(order.subtotal),
       total: String(order.total),
+      couponCode: order.couponCode,
+      couponName: order.couponName,
+      discountAmount: String(order.discountAmount ?? '0'),
       createdAt: order.createdAt.toISOString(),
       lines: lines.map((line) => ({
         ...line,
