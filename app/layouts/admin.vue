@@ -39,6 +39,11 @@ const nav = [
     icon: 'M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Zm8 2.2 4.2-2.4L12 5 7.8 7.3 12 9.7Zm-6 6 5 2.8v-7.1L6 8.6v7.1Zm7 2.8 5-2.8V8.6l-5 2.8v7.1Z',
   },
   {
+    to: '/admin/coupons',
+    label: '優惠碼',
+    icon: 'M4 6h16v2H4V6Zm2 4h12v2H6v-2Zm-2 4h8v2H4v-2Zm10 4H4v2h12v-2Z',
+  },
+  {
     to: '/admin/orders',
     label: '訂單',
     icon: 'M6 3h12v18l-2-1.2-2 1.2-2-1.2-2 1.2-2-1.2L6 21V3Zm3 5h6v2H9V8Zm0 4h6v2H9v-2Zm0 4h4v2H9v-2Z',

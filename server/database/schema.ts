@@ -707,3 +707,54 @@ export const customerMessages = pgTable(
     index('customer_messages_tenant_customer_idx').on(t.tenantId, t.customerId),
   ],
 )
+
+/** 租戶優惠碼（滿額門檻、固定減額或百分比折扣；可限定適用商品） */
+export const coupons = pgTable(
+  'coupons',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 255 }).notNull(),
+    code: varchar('code', { length: 64 }).notNull(),
+    description: text('description'),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+    /** null 表示無最低消費門檻 */
+    minOrderAmount: numeric('min_order_amount', { precision: 14, scale: 4 }),
+    /** fixed：減固定金額；percent：折扣百分比（0–100） */
+    discountType: varchar('discount_type', { length: 16 }).notNull(),
+    discountValue: numeric('discount_value', { precision: 14, scale: 4 }).notNull(),
+    status: varchar('status', { length: 32 }).notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('coupons_tenant_code_uidx').on(t.tenantId, t.code),
+    index('coupons_tenant_status_idx').on(t.tenantId, t.status),
+    index('coupons_tenant_period_idx').on(t.tenantId, t.startsAt, t.endsAt),
+  ],
+)
+
+/** 優惠碼適用商品；無列則表示全店商品皆可計入 */
+export const couponProducts = pgTable(
+  'coupon_products',
+  {
+    couponId: uuid('coupon_id')
+      .notNull()
+      .references(() => coupons.id, { onDelete: 'cascade' }),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    sortOrder: integer('sort_order').notNull().default(0),
+  },
+  (t) => [
+    uniqueIndex('coupon_products_coupon_product_uidx').on(t.couponId, t.productId),
+    index('coupon_products_product_id_idx').on(t.productId),
+  ],
+)

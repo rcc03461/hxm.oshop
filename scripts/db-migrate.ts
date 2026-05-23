@@ -53,10 +53,23 @@ async function main() {
       select hash from public.__drizzle_migrations
     `
     const applied = new Set(appliedRows.map((r) => r.hash))
+    const hashMatches = migrations.filter((m) => applied.has(m.hash)).length
     const pending = migrations.filter((m) => !applied.has(m.hash))
     console.info(
-      `[db-migrate] 已套用 ${applied.size}/${migrations.length} 則 migration，待套用 ${pending.length} 則`,
+      `[db-migrate] 已套用 ${applied.size}/${migrations.length} 則 migration（hash 相符 ${hashMatches}），待套用 ${pending.length} 則`,
     )
+
+    if (applied.size > 0 && hashMatches === 0) {
+      console.error(
+        '\n[db-migrate] migration 檔案 hash 與 __drizzle_migrations 紀錄完全不符（常見於 migration 檔曾被重新產生）。',
+      )
+      console.error(
+        '資料庫 schema 若已存在，請先執行：bun run db:resync-migrations',
+      )
+      console.error('然後再執行：bun run db:migrate\n')
+      process.exit(1)
+      return
+    }
 
     if (isBaselineMode) {
       if (pending.length === 0) {

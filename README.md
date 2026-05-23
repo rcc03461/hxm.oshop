@@ -99,11 +99,14 @@ node --max-old-space-size=6144 ./node_modules/nuxt/bin/nuxt.mjs dev --host 0.0.0
 ```bash
 bun run db:generate   # 變更 schema 後重新產生 SQL（已有初始檔則通常不需重跑）
 bun run db:migrate    # 套用 migrations（自訂腳本 scripts/db-migrate.ts，會印出完整錯誤）
+bun run db:resync-migrations # migration 檔 hash 與 DB 紀錄不符時，依現有表結構重寫 __drizzle_migrations
 bun run db:baseline   # 僅補寫 migration 紀錄（不執行 SQL，給既有資料庫接手時使用）
 bun run db:repair:custom-domains # 補齊 tenant_custom_domains 欄位/索引（既有舊庫修復）
 ```
 
 說明：`drizzle-kit migrate` 會先執行 `CREATE SCHEMA "drizzle"`，許多雲端資料庫的應用程式帳號**沒有建 schema 權限**會失敗。專案改為使用 `bun run db:migrate`，只在 `public` 建立 `__drizzle_migrations` 並執行 migration SQL。
+
+若 `db:migrate` 出現 **`relation "tenants" already exists`** 且 log 顯示 **hash 相符 0**，代表 `__drizzle_migrations` 內為舊 hash（migration 檔曾被重新產生）。請先 `bun run db:resync-migrations`，再 `bun run db:migrate`。
 
 若 `db:migrate` 出現 **`Client network socket disconnected before secure TLS connection was established`（`ECONNRESET`）**，代表 TLS 握手階段就被對方關閉，常見於：
 

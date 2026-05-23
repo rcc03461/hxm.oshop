@@ -12,6 +12,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun scripts/db-migrate.ts",
     "db:baseline": "bun scripts/db-migrate.ts --baseline",
+    "db:resync-migrations": "bun scripts/db-resync-migrations.ts",
     "db:repair:custom-domains": "bun scripts/db-repair-custom-domains.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
