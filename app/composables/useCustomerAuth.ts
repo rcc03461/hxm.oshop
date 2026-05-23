@@ -2,6 +2,7 @@ export type CustomerAuthUser = {
   id: string
   email: string
   fullName: string | null
+  phone: string | null
 }
 
 export function useCustomerAuth() {

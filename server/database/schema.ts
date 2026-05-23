@@ -673,3 +673,37 @@ export const shopOrderLines = pgTable(
   },
   (t) => [index('shop_order_lines_order_id_idx').on(t.orderId)],
 )
+
+/** 前台用戶留言（註冊會員可帶 customerId，訪客僅填聯絡資料快照） */
+export const customerMessages = pgTable(
+  'customer_messages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    customerId: uuid('customer_id').references(() => customers.id, {
+      onDelete: 'set null',
+    }),
+    name: varchar('name', { length: 120 }).notNull(),
+    email: varchar('email', { length: 255 }).notNull(),
+    phone: varchar('phone', { length: 32 }),
+    message: text('message').notNull(),
+    remark: text('remark'),
+    status: varchar('status', { length: 32 }).notNull().default('pending'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index('customer_messages_tenant_status_created_idx').on(
+      t.tenantId,
+      t.status,
+      t.createdAt,
+    ),
+    index('customer_messages_tenant_customer_idx').on(t.tenantId, t.customerId),
+  ],
+)

@@ -25,6 +25,7 @@ export default defineEventHandler(async (event) => {
         id: schema.customers.id,
         email: schema.customers.email,
         fullName: schema.customers.fullName,
+        phone: schema.customers.phone,
       })
       .from(schema.customers)
       .where(

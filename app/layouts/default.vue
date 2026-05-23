@@ -4,6 +4,7 @@ const { customer, refresh: refreshCustomer, logout: logoutCustomer } = useCustom
 const tenantSlug = useState<string | null>('oshop-tenant-slug')
 const { totalQty } = useStoreCart()
 const { openCartDrawer } = useCartDrawer()
+const { openMessagePopup } = useMessagePopup()
 const requestFetch = useRequestFetch()
 const route = useRoute()
 
@@ -157,6 +158,14 @@ async function handleCustomerLogout() {
           <button
             v-if="tenantSlug"
             type="button"
+            class="rounded-md px-3 py-1.5 font-medium text-neutral-700 hover:bg-neutral-50"
+            @click="openMessagePopup"
+          >
+            留言
+          </button>
+          <button
+            v-if="tenantSlug"
+            type="button"
             data-cart-trigger="true"
             class="relative rounded-md px-3 py-1.5 font-medium text-neutral-700 hover:bg-neutral-50"
             @click="openCartDrawer"
@@ -239,6 +248,7 @@ async function handleCustomerLogout() {
     </main>
 
     <StoreCartDrawer />
+    <StoreMessagePopup />
 
     <footer v-if="shouldShowDefaultFooter" class="border-t border-neutral-200">
       <div
