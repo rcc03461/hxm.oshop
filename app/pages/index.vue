@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { landingHero, landingSlides } from '~/data/landing'
+import { landingHero, landingFeatures, landingShowcase } from '~/data/landing'
 import type { LandingCategory, LandingProductCard } from '~/types/landing'
 import type { HomepageDynamicModule, HomepageModule, HomepageProductSliderProps } from '../types/homepage'
 import {
@@ -234,10 +234,9 @@ const enabledHomepageModules = computed(() =>
     </section>
   </div>
 
-  <div v-else class="mx-auto max-w-5xl px-4 py-16 sm:px-6 sm:py-24">
-  
+  <div v-else class="w-full overflow-hidden">
     <LandingHeroSection :hero="landingHero" />
-    <LandingSliderSection :slides="landingSlides" />
-
+    <LandingFeaturesSection :features="landingFeatures" />
+    <LandingShowcaseSection :items="landingShowcase" />
   </div>
 </template>

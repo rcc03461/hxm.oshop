@@ -76,7 +76,10 @@ function isActive(to: string) {
       class="hidden w-52 shrink-0 border-r border-neutral-200 bg-white md:block"
     >
       <div class="border-b border-neutral-200 px-4 py-4">
-        <p class="text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <NuxtLink to="/" class="block rounded-lg outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500">
+          <SiteLogo class="max-w-full" />
+        </NuxtLink>
+        <p class="mt-3 text-xs font-medium uppercase tracking-wide text-neutral-500">
           租戶後台
         </p>
         <p class="mt-1 font-mono text-sm font-semibold text-neutral-900">
@@ -122,8 +125,10 @@ function isActive(to: string) {
         class="border-b border-neutral-200 bg-white md:hidden"
       >
         <div class="flex items-center justify-between gap-3 px-4 py-3">
-          <span class="font-mono text-sm font-semibold">{{ tenantSlug }}</span>
-          <NuxtLink to="/" class="text-xs text-neutral-500">首頁</NuxtLink>
+          <NuxtLink to="/" class="min-w-0 shrink">
+            <SiteLogo />
+          </NuxtLink>
+          <span class="shrink-0 font-mono text-xs font-semibold text-neutral-600">{{ tenantSlug }}</span>
         </div>
         <nav
           class="flex gap-1 overflow-x-auto border-t border-neutral-100 px-2 pb-2 pt-1"

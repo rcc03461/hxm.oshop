@@ -6,19 +6,66 @@ import type {
 } from '~/types/landing'
 
 export const landingHero: LandingHero = {
-  badge: '多租戶線上商店',
-  title: '幾分鐘開店，專注賣貨',
-  subtitle:
-    'OShop 提供極簡店面與標準購物流程。註冊後即可取得專屬子網域，快速上線並持續擴充。',
+  badge: 'shopgo 多租戶電商',
+  title: '幾分鐘建立專屬商店，專注賣貨。',
+  subtitle: '極簡、快速、完全獨立。只需註冊，即可獲得擁有完整購物流程的專屬網店，程式碼、資料都歸您所有。',
   primaryCta: {
-    label: '立即開店',
+    label: '免費註冊開店',
     to: '/admin/register',
   },
   secondaryCta: {
-    label: '已有商店？管理員登入',
+    label: '登入商店後台',
     to: '/admin/login',
   },
 }
+
+export const landingFeatures = [
+  {
+    num: '01',
+    title: '極速上線',
+    subtitle: '沒有繁瑣設定',
+    description: '完成註冊即刻獲得專屬店舖網址，免懂程式碼，直接開始經營您的品牌。'
+  },
+  {
+    num: '02',
+    title: '租戶隔離',
+    subtitle: '資料絕對安全',
+    description: '每間商店的商品、訂單、顧客資料完全獨立管理，效能與安全性絕不妥協。'
+  },
+  {
+    num: '03',
+    title: '完整電商',
+    subtitle: '開箱即用的購物流程',
+    description: '從商品展示、多規格管理、到購物車與標準結帳，一應俱全。'
+  },
+  {
+    num: '04',
+    title: '極簡美學',
+    subtitle: '專注於您的商品',
+    description: '乾淨俐落的留白設計，讓商品成為視覺焦點，大幅提升轉換率。'
+  }
+]
+
+export const landingShowcase = [
+  {
+    id: 'storefront',
+    title: '極簡的商品展示',
+    description: '提供顧客流暢的瀏覽體驗。',
+    imageUrl: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    id: 'dashboard',
+    title: '強大的後台管理',
+    description: '數據、訂單、商品一目了然。',
+    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    id: 'checkout',
+    title: '流暢的結帳體驗',
+    description: '降低購物車放棄率，輕鬆完成轉換。',
+    imageUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1200&q=80',
+  }
+]
 
 export const landingSlides: LandingSlide[] = [
   {
@@ -48,6 +95,7 @@ export const landingSlides: LandingSlide[] = [
   },
 ]
 
+// ... 原有的 categories 與 products 保持不變，以免影響其他地方
 export const landingCategories: LandingCategory[] = [
   { id: 'new-arrivals', label: '最新上架' },
   { id: 'home-living', label: '家居生活' },
