@@ -25,22 +25,31 @@ export async function loadProductGalleryIds(
   return rows.map((r) => r.attachmentId)
 }
 
+/** 封面在最前；其餘依前端圖庫順序（去重） */
+export function orderProductMediaIds(
+  coverAttachmentId: string | null,
+  galleryAttachmentIds: string[],
+): string[] {
+  const unique = [
+    ...new Set(
+      galleryAttachmentIds.filter((x): x is string => typeof x === 'string' && x.length > 0),
+    ),
+  ]
+  if (!coverAttachmentId) return unique
+  return [coverAttachmentId, ...unique.filter((x) => x !== coverAttachmentId)]
+}
+
 export async function syncProductMedia(
   db: Db,
   tenantId: string,
   productId: string,
   input: { coverAttachmentId: string | null; galleryAttachmentIds: string[] },
 ) {
-  const galleryFiltered = input.galleryAttachmentIds.filter(
-    (x) => x && x !== input.coverAttachmentId,
+  const orderedIds = orderProductMediaIds(
+    input.coverAttachmentId,
+    input.galleryAttachmentIds,
   )
-  const allIds = [
-    ...new Set(
-      [input.coverAttachmentId, ...galleryFiltered].filter(
-        (x): x is string => typeof x === 'string' && x.length > 0,
-      ),
-    ),
-  ]
+  const allIds = orderedIds
 
   if (allIds.length > 0) {
     const ok = await db
@@ -83,9 +92,9 @@ export async function syncProductMedia(
       ),
     )
 
-  for (let i = 0; i < galleryFiltered.length; i++) {
+  for (let i = 0; i < orderedIds.length; i++) {
     await db.insert(schema.attachmentEntityLinks).values({
-      attachmentId: galleryFiltered[i]!,
+      attachmentId: orderedIds[i]!,
       entityType: 'product',
       entityId: productId,
       sortOrder: i,

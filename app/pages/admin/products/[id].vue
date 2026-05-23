@@ -83,14 +83,6 @@ const coverAttachmentId = ref<string | null>(null)
 const galleryItems = ref<ProductMediaItem[]>([])
 const categoryIds = ref<string[]>([])
 
-function toMediaItem(a: AttachmentDto): ProductMediaItem {
-  return {
-    id: a.id,
-    publicUrl: a.publicUrl,
-    filename: a.filename,
-  }
-}
-
 watch(
   () => data.value,
   (v) => {
@@ -103,7 +95,11 @@ watch(
     form.basePrice = v.product.basePrice
     form.originalPrice = v.product.originalPrice ?? ''
     coverAttachmentId.value = v.product.coverAttachmentId
-    galleryItems.value = v.product.galleryAttachments.map(toMediaItem)
+    galleryItems.value = buildProductGalleryItems(
+      v.product.coverAttachmentId,
+      v.product.cover,
+      v.product.galleryAttachments,
+    )
     categoryIds.value = (v.product.categories ?? []).map((c) => c.id)
   },
   { immediate: true },

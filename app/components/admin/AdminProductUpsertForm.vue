@@ -52,13 +52,6 @@ const loading = ref(false)
 const saving = ref(false)
 const err = ref<string | null>(null)
 
-function toMediaItem(a: AttachmentDto): ProductMediaItem {
-  return {
-    id: a.id,
-    publicUrl: a.publicUrl,
-    filename: a.filename,
-  }
-}
 
 function resetForm() {
   form.title = ''
@@ -84,7 +77,11 @@ async function loadDetail() {
   form.basePrice = detail.product.basePrice
   form.originalPrice = detail.product.originalPrice ?? ''
   coverAttachmentId.value = detail.product.coverAttachmentId
-  galleryItems.value = (detail.product.galleryAttachments ?? []).map(toMediaItem)
+  galleryItems.value = buildProductGalleryItems(
+    detail.product.coverAttachmentId,
+    detail.product.cover,
+    detail.product.galleryAttachments ?? [],
+  )
   categoryIds.value = (detail.product.categories ?? []).map((c) => c.id)
 }
 
@@ -137,6 +134,7 @@ async function submit() {
         credentials: 'include',
         body: payload,
       })
+      await loadDetail()
       emit('saved', props.productId)
       return
     }
