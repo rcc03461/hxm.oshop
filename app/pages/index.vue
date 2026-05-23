@@ -234,9 +234,11 @@ const enabledHomepageModules = computed(() =>
     </section>
   </div>
 
-  <div v-else class="w-full overflow-hidden">
+  <div v-else class="relative w-full overflow-hidden">
+    <LandingBackground />
     <LandingHeroSection :hero="landingHero" />
     <LandingFeaturesSection :features="landingFeatures" />
     <LandingShowcaseSection :items="landingShowcase" />
+    <LandingCtaSection />
   </div>
 </template>
