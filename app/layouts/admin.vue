@@ -20,7 +20,7 @@ const nav = [
   },
   {
     to: '/admin/media-assets',
-    label: 'Media Assets',
+    label: '媒體庫',
     icon: 'M5 5h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm2 10h10l-3.2-4.2-2.4 3.1-1.7-2.1L7 15Zm1.5-5.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z',
   },
   {

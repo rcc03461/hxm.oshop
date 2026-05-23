@@ -25,3 +25,7 @@ export const adminCreateAttachmentBodySchema = z
   .refine((d) => !!(d.publicUrl || d.storageKey), {
     message: '請提供 publicUrl 或 storageKey 至少其一',
   })
+
+export const adminUpdateAttachmentBodySchema = z.object({
+  filename: z.string().trim().min(1).max(255),
+})
