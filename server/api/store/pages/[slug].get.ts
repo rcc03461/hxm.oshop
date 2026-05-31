@@ -3,10 +3,10 @@ import { createError } from 'h3'
 import * as schema from '../../../database/schema'
 import { getDb } from '../../../utils/db'
 import { renderPageMarkdownToSafeHtml } from '../../../utils/pageContentRender'
-import { requireStoreTenant } from '../../../utils/storeTenant'
+import { requireAccessibleStoreTenant } from '../../../utils/storeTenant'
 
 export default defineEventHandler(async (event) => {
-  const tenant = await requireStoreTenant(event)
+  const tenant = await requireAccessibleStoreTenant(event)
   const slug = String(getRouterParam(event, 'slug') || '').trim()
   if (!slug) {
     throw createError({ statusCode: 404, message: '找不到頁面' })

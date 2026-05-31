@@ -15,7 +15,7 @@ import {
 } from '../../../utils/storePaypalHttp'
 import { stripeGetJson } from '../../../utils/storeStripeHttp'
 import { loadTenantPaymentSecrets } from '../../../utils/storeTenantPayment'
-import { requireStoreTenant } from '../../../utils/storeTenant'
+import { requireAccessibleStoreTenant } from '../../../utils/storeTenant'
 import { getOrderEventTypeByStatus } from '../../../utils/orderHistory'
 
 const bodySchema = z.discriminatedUnion('provider', [
@@ -32,7 +32,7 @@ const bodySchema = z.discriminatedUnion('provider', [
 ])
 
 export default defineEventHandler(async (event) => {
-  const tenant = await requireStoreTenant(event)
+  const tenant = await requireAccessibleStoreTenant(event)
   const raw = await readBody(event)
   const parsed = bodySchema.safeParse(raw)
   if (!parsed.success) {

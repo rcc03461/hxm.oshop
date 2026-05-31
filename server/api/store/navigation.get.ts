@@ -2,10 +2,10 @@ import { and, asc, eq } from 'drizzle-orm'
 import * as schema from '../../database/schema'
 import { getDb } from '../../utils/db'
 import { buildMenuTree } from '../../utils/menuTree'
-import { requireStoreTenant } from '../../utils/storeTenant'
+import { requireAccessibleStoreTenant } from '../../utils/storeTenant'
 
 export default defineEventHandler(async (event) => {
-  const tenant = await requireStoreTenant(event)
+  const tenant = await requireAccessibleStoreTenant(event)
   const db = getDb(event)
 
   const rows = await db

@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm'
 import * as schema from '../../database/schema'
 import { getDb } from '../../utils/db'
-import { requireStoreTenant } from '../../utils/storeTenant'
+import { requireAccessibleStoreTenant } from '../../utils/storeTenant'
 
 const DEFAULT_METHODS = ['Standard Shipping']
 
 export default defineEventHandler(async (event) => {
-  const tenant = await requireStoreTenant(event)
+  const tenant = await requireAccessibleStoreTenant(event)
   const db = getDb(event)
 
   const [row] = await db

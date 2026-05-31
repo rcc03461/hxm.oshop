@@ -1,10 +1,15 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { createError } from 'h3'
 import * as schema from '../../database/schema'
 import { getDb } from '../../utils/db'
-import { requireAccessibleStoreTenant } from '../../utils/storeTenant'
+import {
+  getStoreAccessStatus,
+  getStoreVisibilityFlags,
+} from '../../utils/storeAccess'
+import { requireStoreTenant } from '../../utils/storeTenant'
 
 export default defineEventHandler(async (event) => {
-  const tenant = await requireAccessibleStoreTenant(event)
+  const tenant = await requireStoreTenant(event)
   const db = getDb(event)
 
   const [row] = await db
@@ -17,28 +22,32 @@ export default defineEventHandler(async (event) => {
     .limit(1)
 
   if (!row) {
-    return {
-      shopSlug: tenant.shopSlug,
-      displayName: tenant.shopSlug,
-      logoUrl: null as string | null,
-    }
+    throw createError({ statusCode: 404, message: '找不到商店' })
   }
 
-  const settings = (row.settings ?? {}) as Record<string, unknown>
+  const settings =
+    row.settings && typeof row.settings === 'object'
+      ? (row.settings as Record<string, unknown>)
+      : {}
+
+  const access = await getStoreAccessStatus(event, tenant.id, settings)
+  const { storeEnabled, hasPassword } = getStoreVisibilityFlags(settings)
+
   const displayNameRaw = settings.displayName
   const displayName =
     typeof displayNameRaw === 'string' && displayNameRaw.trim()
       ? displayNameRaw.trim()
       : row.shopSlug
 
-  const logoId = typeof settings.logoAttachmentId === 'string' ? settings.logoAttachmentId : null
+  const logoId =
+    typeof settings.logoAttachmentId === 'string'
+      ? settings.logoAttachmentId
+      : null
   let logoUrl: string | null = null
 
   if (logoId) {
     const rows = await db
-      .select({
-        publicUrl: schema.attachments.publicUrl,
-      })
+      .select({ publicUrl: schema.attachments.publicUrl })
       .from(schema.attachments)
       .where(
         and(
@@ -48,7 +57,6 @@ export default defineEventHandler(async (event) => {
         ),
       )
       .limit(1)
-
     logoUrl = rows[0]?.publicUrl ?? null
   }
 
@@ -56,5 +64,10 @@ export default defineEventHandler(async (event) => {
     shopSlug: row.shopSlug,
     displayName,
     logoUrl,
+    storeEnabled,
+    storeViewPasswordSet: hasPassword,
+    requiresPassword: access.requiresPassword,
+    hasAccess: access.hasAccess,
+    reason: access.reason ?? null,
   }
 })

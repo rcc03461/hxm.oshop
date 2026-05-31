@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
     const result = await db.transaction(async (tx) => {
       const [tenant] = await tx
         .insert(schema.tenants)
-        .values({ shopSlug })
+        .values({ shopSlug, settings: { storeEnabled: false } })
         .returning()
 
       if (!tenant) {

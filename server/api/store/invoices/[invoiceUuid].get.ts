@@ -2,13 +2,13 @@ import { and, eq } from 'drizzle-orm'
 import { createError } from 'h3'
 import * as schema from '../../../database/schema'
 import { getDb } from '../../../utils/db'
-import { requireStoreTenant } from '../../../utils/storeTenant'
+import { requireAccessibleStoreTenant } from '../../../utils/storeTenant'
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export default defineEventHandler(async (event) => {
-  const tenant = await requireStoreTenant(event)
+  const tenant = await requireAccessibleStoreTenant(event)
   const invoiceUuid = String(getRouterParam(event, 'invoiceUuid') ?? '').trim()
   if (!UUID_RE.test(invoiceUuid)) {
     throw createError({ statusCode: 400, message: '發票編號格式不正確' })

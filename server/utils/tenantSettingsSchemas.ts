@@ -89,6 +89,8 @@ export const tenantStoredSettingsSchema = z
     socialWebsite: optionalHttpUrl(),
     shippingMethods: z.array(shippingMethodSchema).max(20).optional(),
     shippingForm: shippingFormSchema,
+    /** 是否對外開放店舖；未設定時視為 false */
+    storeEnabled: z.boolean().optional(),
   })
   .strict()
 
@@ -96,4 +98,6 @@ export type TenantStoredSettings = z.infer<typeof tenantStoredSettingsSchema>
 
 export const adminTenantSettingsPatchBodySchema = z.object({
   settings: z.unknown(),
+  /** 明文看店密碼；null 或空字串表示清除；省略則不變 */
+  storeViewPassword: z.union([z.string().max(128), z.null()]).optional(),
 })

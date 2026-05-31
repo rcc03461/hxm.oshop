@@ -4,10 +4,10 @@ import * as schema from '../../database/schema'
 import { storeMessageBodySchema } from '../../utils/customerMessageSchemas'
 import { getDb } from '../../utils/db'
 import { getOptionalStoreCustomerSession } from '../../utils/optionalStoreCustomerSession'
-import { requireStoreTenant } from '../../utils/storeTenant'
+import { requireAccessibleStoreTenant } from '../../utils/storeTenant'
 
 export default defineEventHandler(async (event) => {
-  const tenant = await requireStoreTenant(event)
+  const tenant = await requireAccessibleStoreTenant(event)
   const raw = await readBody(event)
   const parsed = storeMessageBodySchema.safeParse(raw)
   if (!parsed.success) {

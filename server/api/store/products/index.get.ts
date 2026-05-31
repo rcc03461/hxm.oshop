@@ -16,7 +16,7 @@ import { createError } from 'h3'
 import { z } from 'zod'
 import * as schema from '../../../database/schema'
 import { getDb } from '../../../utils/db'
-import { requireStoreTenant } from '../../../utils/storeTenant'
+import { requireAccessibleStoreTenant } from '../../../utils/storeTenant'
 
 const DEFAULT_PAGE_SIZE = 24
 const MAX_PAGE_SIZE = 100
@@ -24,7 +24,7 @@ const MAX_PAGE_SIZE = 100
 const categoryIdSchema = z.string().uuid('分類 id 格式不正確')
 
 export default defineEventHandler(async (event) => {
-  const tenant = await requireStoreTenant(event)
+  const tenant = await requireAccessibleStoreTenant(event)
   const db = getDb(event)
   const q = getQuery(event)
   const page = Math.max(1, Number(q.page) || 1)

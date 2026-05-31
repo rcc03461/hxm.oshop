@@ -19,11 +19,11 @@ import {
 } from '../../utils/storePaypalHttp'
 import { stripePostForm } from '../../utils/storeStripeHttp'
 import { loadTenantPaymentSecrets } from '../../utils/storeTenantPayment'
-import { requireStoreTenant } from '../../utils/storeTenant'
+import { requireAccessibleStoreTenant } from '../../utils/storeTenant'
 import { getOptionalStoreCustomerSession } from '../../utils/optionalStoreCustomerSession'
 
 export default defineEventHandler(async (event) => {
-  const tenant = await requireStoreTenant(event)
+  const tenant = await requireAccessibleStoreTenant(event)
   const raw = await readBody(event)
   const parsed = storeCheckoutBodySchema.safeParse(raw)
   if (!parsed.success) {

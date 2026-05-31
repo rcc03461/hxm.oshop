@@ -5,6 +5,9 @@ import { getDb } from '../../utils/db'
 import { summarizeDbErrorForLog } from '../../utils/dbErrors'
 import { requireTenantSession } from '../../utils/requireTenantSession'
 import {
+  hashStoreViewPassword,
+} from '../../utils/storeAccess'
+import {
   adminTenantSettingsPatchBodySchema,
   tenantStoredSettingsSchema,
 } from '../../utils/tenantSettingsSchemas'
@@ -52,10 +55,32 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: msg })
   }
 
-  const next = parsed.data
+  const [existing] = await db
+    .select({ settings: schema.tenants.settings })
+    .from(schema.tenants)
+    .where(eq(schema.tenants.id, session.tenantId))
+    .limit(1)
+
+  const existingSettings =
+    existing?.settings && typeof existing.settings === 'object'
+      ? (existing.settings as Record<string, unknown>)
+      : {}
+
+  const next: Record<string, unknown> = { ...parsed.data }
+
+  if (wrapped.data.storeViewPassword !== undefined) {
+    const plain = wrapped.data.storeViewPassword
+    if (plain === null || plain.trim() === '') {
+      delete next.storeViewPasswordHash
+    } else {
+      next.storeViewPasswordHash = await hashStoreViewPassword(plain.trim())
+    }
+  } else if (typeof existingSettings.storeViewPasswordHash === 'string') {
+    next.storeViewPasswordHash = existingSettings.storeViewPasswordHash
+  }
   await assertAttachmentsOwned(db, session.tenantId, [
-    next.logoAttachmentId,
-    next.faviconAttachmentId,
+    next.logoAttachmentId as string | null | undefined,
+    next.faviconAttachmentId as string | null | undefined,
   ])
 
   try {
@@ -72,7 +97,16 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, message: '找不到租戶' })
     }
 
-    return { ok: true as const, shopSlug: updated.shopSlug, settings: updated.settings }
+    const { storeViewPasswordHash: _hash, ...publicSettings } = next
+
+    return {
+      ok: true as const,
+      shopSlug: updated.shopSlug,
+      settings: {
+        ...publicSettings,
+        storeEnabled: next.storeEnabled === true,
+      },
+    }
   } catch (e: unknown) {
     if (isError(e)) throw e
     console.error('[admin/tenant-settings PATCH]', summarizeDbErrorForLog(e))

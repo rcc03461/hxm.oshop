@@ -3,10 +3,10 @@ import { getDb } from '../../../utils/db'
 import { applyCouponToCheckout } from '../../../utils/storeCouponApply'
 import { resolveCheckoutLines } from '../../../utils/storeCheckoutResolveLines'
 import { storeCouponPreviewBodySchema } from '../../../utils/storeCheckoutSchemas'
-import { requireStoreTenant } from '../../../utils/storeTenant'
+import { requireAccessibleStoreTenant } from '../../../utils/storeTenant'
 
 export default defineEventHandler(async (event) => {
-  const tenant = await requireStoreTenant(event)
+  const tenant = await requireAccessibleStoreTenant(event)
   const raw = await readBody(event)
   const parsed = storeCouponPreviewBodySchema.safeParse(raw)
   if (!parsed.success) {

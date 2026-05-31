@@ -22,6 +22,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const raw = tenant.settings as Record<string, unknown>
+  const { storeViewPasswordHash, ...publicSettings } = raw
   const logoId = typeof raw.logoAttachmentId === 'string' ? raw.logoAttachmentId : null
   const favId =
     typeof raw.faviconAttachmentId === 'string' ? raw.faviconAttachmentId : null
@@ -59,7 +60,12 @@ export default defineEventHandler(async (event) => {
 
   return {
     shopSlug: tenant.shopSlug,
-    settings: tenant.settings,
+    settings: {
+      ...publicSettings,
+      storeEnabled: raw.storeEnabled === true,
+    },
+    storeViewPasswordSet:
+      typeof storeViewPasswordHash === 'string' && storeViewPasswordHash.length > 0,
     previews: { logo, favicon },
   }
 })

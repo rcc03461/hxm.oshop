@@ -6,6 +6,7 @@ definePageMeta({
 type SettingsResponse = {
   shopSlug: string
   settings: Record<string, unknown>
+  storeViewPasswordSet: boolean
   previews: {
     logo: { id: string; publicUrl: string | null; filename: string } | null
     favicon: { id: string; publicUrl: string | null; filename: string } | null
@@ -47,7 +48,12 @@ const form = reactive({
   socialWhatsapp: '',
   socialThreads: '',
   socialWebsite: '',
+  storeEnabled: false,
 })
+
+const storeViewPassword = ref('')
+const clearStoreViewPassword = ref(false)
+const storeViewPasswordSet = ref(false)
 
 /** 與 PATCH body 的 settings 欄位對齊（見 server/utils/tenantSettingsSchemas） */
 type TenantSettingsPayload = Record<string, unknown>
@@ -92,6 +98,10 @@ watch(
     form.socialWhatsapp = str(s.socialWhatsapp)
     form.socialThreads = str(s.socialThreads)
     form.socialWebsite = str(s.socialWebsite)
+    form.storeEnabled = s.storeEnabled === true
+    storeViewPassword.value = ''
+    clearStoreViewPassword.value = false
+    storeViewPasswordSet.value = v.storeViewPasswordSet === true
 
     localLogoUrl.value = v.previews.logo?.publicUrl ?? null
     localFaviconUrl.value = v.previews.favicon?.publicUrl ?? null
@@ -181,6 +191,7 @@ function buildSettings(): TenantSettingsPayload {
     socialWhatsapp: optionalTrim(form.socialWhatsapp),
     socialThreads: optionalTrim(form.socialThreads),
     socialWebsite: optionalTrim(form.socialWebsite),
+    storeEnabled: form.storeEnabled,
   }
 }
 
@@ -198,10 +209,21 @@ async function save() {
   saving.value = true
   saveErr.value = null
   try {
+    const body: {
+      settings: TenantSettingsPayload
+      storeViewPassword?: string | null
+    } = { settings: buildSettings() }
+
+    if (clearStoreViewPassword.value) {
+      body.storeViewPassword = null
+    } else if (storeViewPassword.value.trim()) {
+      body.storeViewPassword = storeViewPassword.value.trim()
+    }
+
     await $fetch('/api/admin/tenant-settings', {
       method: 'PATCH',
       credentials: 'include',
-      body: { settings: buildSettings() },
+      body,
     })
     await refresh()
   } catch (e: unknown) {
@@ -273,6 +295,49 @@ async function save() {
       >
         {{ saveErr }}
       </p>
+
+      <!-- 對外開放 -->
+      <section class="rounded-lg border border-neutral-200 bg-white p-5 space-y-4 shadow-sm">
+        <h2 class="text-sm font-semibold text-neutral-900">
+          對外開放
+        </h2>
+        <p class="text-xs text-neutral-500">
+          新商店預設不對外開放。完成設定後再開啟，或設定看店密碼供他人預覽。
+        </p>
+        <div class="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 bg-neutral-50/80 px-4 py-3">
+          <div>
+            <p class="text-sm font-medium text-neutral-900">
+              開啟店舖
+            </p>
+            <p class="mt-1 text-xs text-neutral-500">
+              關閉時訪客無法瀏覽（已登入後台的管理員仍可預覽）。
+            </p>
+          </div>
+          <AdminStatusSwitch v-model="form.storeEnabled" />
+        </div>
+        <AdminFormTextInput
+          v-model="storeViewPassword"
+          label="看店密碼（選填）"
+          type="password"
+          autocomplete="new-password"
+          :hint="
+            storeViewPasswordSet
+              ? '已設定看店密碼；輸入新密碼可覆蓋，或勾選下方清除。'
+              : '設定後，訪客需輸入密碼才能瀏覽（店舖關閉時亦可用密碼預覽）。'
+          "
+        />
+        <label
+          v-if="storeViewPasswordSet"
+          class="flex items-center gap-2 text-sm text-neutral-700"
+        >
+          <input
+            v-model="clearStoreViewPassword"
+            type="checkbox"
+            class="rounded border-neutral-300"
+          >
+          清除看店密碼
+        </label>
+      </section>
 
       <!-- 品牌 -->
       <section class="rounded-lg border border-neutral-200 bg-white p-5 space-y-4 shadow-sm">

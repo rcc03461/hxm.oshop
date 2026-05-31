@@ -5,10 +5,10 @@ import {
 } from '../../utils/paymentProviderSchemas'
 import * as schema from '../../database/schema'
 import { getDb } from '../../utils/db'
-import { requireStoreTenant } from '../../utils/storeTenant'
+import { requireAccessibleStoreTenant } from '../../utils/storeTenant'
 
 export default defineEventHandler(async (event) => {
-  const tenant = await requireStoreTenant(event)
+  const tenant = await requireAccessibleStoreTenant(event)
   const db = getDb(event)
 
   const codes = [...ADMIN_PAYMENT_PROVIDER_CODES]

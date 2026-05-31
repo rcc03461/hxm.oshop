@@ -1,10 +1,10 @@
 import { createError } from 'h3'
 import { getDb } from '../../../utils/db'
 import { loadProductDetailForTenant } from '../../../utils/productDetailForTenant'
-import { requireStoreTenant } from '../../../utils/storeTenant'
+import { requireAccessibleStoreTenant } from '../../../utils/storeTenant'
 
 export default defineEventHandler(async (event) => {
-  const tenant = await requireStoreTenant(event)
+  const tenant = await requireAccessibleStoreTenant(event)
   const slug = getRouterParam(event, 'slug')
   if (!slug || !slug.trim()) {
     throw createError({ statusCode: 404, message: '找不到商品' })
