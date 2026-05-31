@@ -1,0 +1,43 @@
+# 這是一個 snippet 定義，必須用括號括起來
+(wildcard_config) {
+    tls {
+        dns cloudflare cfat_5U10QHcLJoI8eMuxxxxxxxxxxxxxxxxxxxx
+    }
+}
+
+#*.shopgo.com.hk {
+#    import wildcard_config
+#    reverse_proxy localhost:8555
+#}
+
+#shopgo.com.hk {
+#    import wildcard_config
+#    reverse_proxy localhost:8555
+#}
+
+
+# ——選項：單一 :443（搭配 Origin PEM 時請用這種格式，並刪／合併上方 blocks）——
+#:443 {
+#       tls /etc/caddy/certs/cloudflare-origin.pem /etc/caddy/certs/cloudflare-origin.key
+#       reverse_proxy 127.0.0.1:8555
+
+# }
+
+# 將域名分行寫，或寫在同一行
+*.shopgo.com.hk, shopgo.com.hk, :443 {
+    import wildcard_config
+
+    # 重要：不要用 ~，必須用絕對路徑
+    # 且 Caddy 必須有權限進入該目錄（建議搬到 /var/www）
+    root * /var/www/shopgo.com.hk/public
+
+    # 用 handle（勿用 handle_path）：handle_path 會剝掉 /uploads，
+    # 會去找 public/{tenantId}/file.jpg，實際檔案在 public/uploads/{tenantId}/...
+    handle /uploads/* {
+        file_server
+    }
+
+    handle {
+        reverse_proxy localhost:8555
+    }
+}
